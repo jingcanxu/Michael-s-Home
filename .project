@@ -28,4 +28,11 @@
 		<nature>org.eclipse.jdt.core.javanature</nature>
 		<nature>org.eclipse.wst.jsdt.core.jsNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>WebContent/Image/IMG_4827.JPG</name>
+			<type>1</type>
+			<location>D:/United State/2018美西自驾/IMG_4827.JPG</location>
+		</link>
+	</linkedResources>
 </projectDescription>
