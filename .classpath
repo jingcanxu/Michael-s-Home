@@ -15,5 +15,9 @@
 	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
 	<classpathentry kind="lib" path="D:/oraclexe/app/oracle/product/11.2.0/server/jdbc/lib/ojdbc6.jar"/>
 	<classpathentry kind="lib" path="D:/Java/jdom-2.0.6/jdom-2.0.6.jar"/>
+	<classpathentry kind="lib" path="D:/Java/jdom-2.0.6/lib/xml-apis.jar"/>
+	<classpathentry kind="lib" path="D:/Java/junit-4.13-beta-3.jar"/>
+	<classpathentry kind="lib" path="D:/Java/Jar/hamcrest-junit-2.0.0.0.jar"/>
+	<classpathentry kind="lib" path="D:/Java/Jar/hamcrest-2.1.jar"/>
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>

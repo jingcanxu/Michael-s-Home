@@ -8,7 +8,7 @@
      <!-- 类名 -->  
     <servlet-name>HelloServlet</servlet-name>  
     <!-- 所在的包 -->  
-    <servlet-class>com.runoob.test.HelloServlet</servlet-class>  
+    <servlet-class>com.runoot.test.HelloServlet</servlet-class>  
   </servlet>  
   <servlet-mapping>  
     <servlet-name>HelloServlet</servlet-name>  

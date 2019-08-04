@@ -1,42 +1,43 @@
 package com.runoot.test;
-
-import java.io.IOException;
+ 
 import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-/**
- * Servlet implementation class HelloServlet
- */
-@WebServlet("/HelloServlet")
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.Map;
+  
 public class HelloServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
-       
-    /**
-     * @see HttpServlet#HttpServlet()
-     */
-    public HelloServlet() {
-        super();
-        // TODO Auto-generated constructor stub
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        this.doGet(req,resp);
     }
-
-    /**
-     * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-     */
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // 使用 GBK 设置中文正常显示
-        response.setCharacterEncoding("GBK");
-        response.getWriter().write("菜鸟教程：http://www.runoob.com");
+ 
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        resp.setCharacterEncoding("utf-8");
+ 
+        String username=req.getParameter("username");
+        String availiable="0";
+        String info="该用户名可以使用！";
+        Map<String,String> map=new HashMap();
+ 
+ 
+        if(username!=null&&!username.equals("")){
+            if(username.equals("3127")){
+                availiable="1";
+                info="对不起，该用户名已被使用！";
+            }
+        }
+ 
+        map.put("availiable",availiable);
+        map.put("info",info);
+ 
+        PrintWriter writer = resp.getWriter();
+       // writer.print(JSON.toJSON(map));
+        writer.flush();
+        writer.close();
     }
-
-    /**
-     * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
-     */
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // TODO Auto-generated method stub
-        doGet(request, response);
     }
-
-}
