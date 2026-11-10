@@ -266,9 +266,11 @@ function activityList(items) {
 
 /* ---------------- Review board ---------------- */
 function renderQueue() {
+  if (ui.focus) return renderFocus();
   const stats = reviewStats();
   const scope = state.nodes.filter(canReview)
     .filter(n => ui.queueLevel === 'all' || n.level === ui.queueLevel);
+  const remaining = scope.filter(n => reviewStatus(n) === 'Pending' || reviewStatus(n) === 'Need Revise').length;
   const columns = [
     { key: 'Pending', label: 'Pending review', cls: 'pending', iconName: 'clock' },
     { key: 'Need Revise', label: 'Need revise', cls: 'revise', iconName: 'alert' },
@@ -284,7 +286,9 @@ function renderQueue() {
         '<button class="' + (ui.queueLevel === 'L4' ? 'active' : '') + '" data-action="queue-level" data-level="L4">L4 · ' + levelCount('L4') + '</button>' +
       '</div>' +
       '<span class="board-note">' + icon('drag') + '<b>' + stats.pending + '</b> awaiting review · drag a card between columns to set the result</span>' +
-      '<button class="btn ghost sm" style="margin-left:auto" data-action="add-node" data-level="L4">' + icon('plus') + 'Add L4 node</button>' +
+      '<button class="btn primary sm" style="margin-left:auto" data-action="start-focus"' + (remaining ? '' : ' disabled') + '>' +
+        icon('review') + 'Focus review · ' + remaining + ' left</button>' +
+      '<button class="btn ghost sm" data-action="add-node" data-level="L4">' + icon('plus') + 'Add L4 node</button>' +
     '</div>' +
     '<div class="board">' + columns.map(col => {
       const items = scope.filter(n => reviewStatus(n) === col.key).sort(queueSort);
@@ -329,4 +333,107 @@ function reviewCard(n) {
       '<span class="card-date">' + (n.reviewDate ? esc(fmtDate(n.reviewDate)) : 'Not reviewed') + '</span></div>' +
     '<div class="card-actions">' + actions + '</div>' +
   '</article>';
+}
+
+/* ---------------- Focused review ---------------- */
+function renderFocus() {
+  const f = ui.focus;
+  f.queue = f.queue.filter(id => {
+    const n = INDEX.get(id);
+    return n && canReview(n) && (reviewStatus(n) === 'Pending' || reviewStatus(n) === 'Need Revise');
+  });
+  if (!f.queue.length) return focusDoneHTML(f);
+  if (f.pos >= f.queue.length) f.pos = 0;
+  const node = INDEX.get(f.queue[f.pos]);
+  const total = f.total || f.queue.length;
+  const done = Math.max(0, total - f.queue.length);
+  const pct = total ? Math.round((done / total) * 100) : 0;
+
+  const crumbParts = ['L1', 'L2', 'L3']
+    .map(l => nameAtLevel(node, l))
+    .filter((v, i, arr) => v && arr.indexOf(v) === i);
+  const crumb = crumbParts.join(' / ');
+
+  const meta = [
+    ['Priority', priorityPill(node.priority)],
+    ['Status', esc(node.status || '—')],
+    ['Change Type', esc(node.changeType || '—')],
+    ['Lock Status', esc(node.lockStatus || '—')],
+    ['Owner Biz Team', esc(node.ownerBizTeam || '—')],
+    ['DT Owner', esc(node.dtOwner || '—')],
+    ['Tech Stack', esc(node.techStack || '—')],
+    ['AI Score', node.aiScore !== '' ? esc(node.aiScore) + ' / 100' : '—']
+  ];
+  const links = [];
+  if (node.prdLink) links.push('<a class="focus-link" href="' + esc(node.prdLink) + '" target="_blank" rel="noopener">' + icon('external') + 'PRD link</a>');
+  if (node.fsLink) links.push('<a class="focus-link" href="' + esc(node.fsLink) + '" target="_blank" rel="noopener">' + icon('external') + 'FS link</a>');
+
+  const prev = node.evaluationResult
+    ? '<div class="focus-prev ' + (node.evaluationResult === 'Need Revise' ? 'revise' : '') + '">' + icon('alert') +
+      '<div><strong>Previously marked ' + esc(node.evaluationResult) + '</strong>' +
+      '<span>' + esc([node.reviewer, node.reviewDate ? fmtDate(node.reviewDate) : ''].filter(Boolean).join(' · ') || 'No reviewer recorded') + '</span>' +
+      (node.notes ? '<p>' + esc(node.notes) + '</p>' : '') + '</div></div>'
+    : '';
+
+  const nextItems = f.queue.slice(f.pos + 1, f.pos + 5).map(id => INDEX.get(id)).filter(Boolean);
+
+  return '<div class="page focus-page">' +
+    '<div class="focus-topbar">' +
+      '<button class="btn ghost sm" data-action="focus-exit">' + icon('chevron-left') + 'Back to board</button>' +
+      '<div class="focus-progress">' +
+        '<span><b>' + f.queue.length + '</b> of ' + total + ' remaining</span>' +
+        '<div class="focus-track"><i style="width:' + pct + '%"></i></div>' +
+      '</div>' +
+      '<span class="focus-keys">Keys: <kbd>P</kbd> Pass · <kbd>N</kbd> Revise · <kbd>X</kbd> Reject · <kbd>S</kbd> Skip</span>' +
+    '</div>' +
+    '<div class="focus-grid">' +
+      '<section class="focus-card panel">' +
+        '<div class="focus-card-top">' + levelBadge(node.level) + '<span class="node-id">' + esc(node.nodeId) + '</span>' +
+          '<span class="focus-pos">#' + (f.pos + 1) + ' in queue</span></div>' +
+        '<h2 class="focus-name">' + esc(node.name || '(unnamed)') + '</h2>' +
+        '<div class="card-crumb">' + esc(crumb || 'Top-level') + '</div>' +
+        (node.description ? '<p class="focus-desc">' + esc(node.description) + '</p>' : '') +
+        prev +
+        '<div class="focus-meta">' + meta.map(m =>
+          '<div class="focus-meta-item"><label>' + esc(m[0]) + '</label><span>' + m[1] + '</span></div>').join('') + '</div>' +
+        (links.length ? '<div class="focus-links">' + links.join('') + '</div>' : '') +
+        '<div class="focus-note-wrap"><label for="focus-note">Review note <span class="meta">optional — saved with the result</span></label>' +
+          '<textarea id="focus-note" rows="2" placeholder="Conditions, follow-ups, reasons…"></textarea></div>' +
+        '<div class="focus-actions">' +
+          '<button class="focus-btn reject" data-action="focus-result" data-result="Reject">' + icon('close') + 'Reject</button>' +
+          '<button class="focus-btn revise" data-action="focus-result" data-result="Need Revise">' + icon('alert') + 'Need Revise</button>' +
+          '<button class="focus-btn pass" data-action="focus-result" data-result="Passed">' + icon('check') + 'Pass</button>' +
+          '<button class="btn ghost sm" data-action="focus-skip">' + icon('chevron-right') + 'Skip</button>' +
+          '<button class="btn ghost sm" data-action="focus-open">' + icon('list') + 'Full details</button>' +
+        '</div>' +
+      '</section>' +
+      '<aside class="focus-side">' +
+        '<div class="panel focus-next"><div class="panel-head"><div><h3>Up next</h3><p>' + nextItems.length + ' of ' + Math.max(0, f.queue.length - 1) + ' after this</p></div></div>' +
+          '<div class="focus-next-list">' +
+            (nextItems.length ? nextItems.map(n =>
+              '<div class="focus-next-item">' + levelBadge(n.level) +
+                '<div class="focus-next-main"><strong>' + esc(n.name || '(unnamed)') + '</strong><span>' + esc(n.nodeId) + '</span></div>' +
+                priorityPill(n.priority) + '</div>').join('')
+              : '<div class="board-empty" style="padding:14px">This is the last one</div>') +
+          '</div>' +
+        '</div>' +
+      '</aside>' +
+    '</div>' +
+  '</div>';
+}
+
+function focusDoneHTML(f) {
+  const total = f.total || 0;
+  return '<div class="page focus-page">' +
+    '<div class="focus-done panel">' +
+      '<span class="focus-done-ico">' + icon('check-circle') + '</span>' +
+      '<h2>Queue complete</h2>' +
+      '<p>You reviewed ' + total + ' node' + (total === 1 ? '' : 's') + ' in this session. Nothing left awaiting review' +
+        (ui.queueLevel === 'all' ? '' : ' for ' + ui.queueLevel) + '.</p>' +
+      '<div class="focus-done-actions">' +
+        '<button class="btn primary" data-action="focus-exit">' + icon('review') + 'Back to review board</button>' +
+        '<button class="btn ghost" data-action="navigate" data-view="overview">View overview</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
 }

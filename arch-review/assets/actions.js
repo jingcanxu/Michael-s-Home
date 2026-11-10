@@ -179,6 +179,24 @@ function handleClick(e) {
       ui.queueLevel = actionEl.dataset.level || 'all';
       render();
       break;
+    case 'start-focus':
+      startFocus();
+      break;
+    case 'focus-exit':
+      ui.focus = null;
+      render();
+      break;
+    case 'focus-skip':
+      focusSkip();
+      break;
+    case 'focus-result':
+      focusResult(actionEl.dataset.result);
+      break;
+    case 'focus-open': {
+      const node = focusCurrent();
+      if (node) openDrawer(node.id);
+      break;
+    }
     case 'open-node-id': {
       const node = state.nodes.find(n => n.nodeId === actionEl.dataset.nodeId);
       if (node) openDrawer(node.id);
@@ -419,7 +437,52 @@ function setDraftResult(result) {
   markDirty();
 }
 
-/* ---------------- Review actions ---------------- */
+/* ---------------- Focused review ---------------- */
+function startFocus() {
+  const ids = focusQueueIds();
+  if (!ids.length) {
+    toast('Nothing to review', 'warn', 'All L3/L4 nodes in this scope already have a result.');
+    return;
+  }
+  ui.focus = { queue: ids, pos: 0, total: ids.length };
+  render();
+  const main = document.querySelector('.content');
+  if (main) main.scrollTop = 0;
+}
+
+function focusCurrent() {
+  if (!ui.focus) return null;
+  const id = ui.focus.queue[ui.focus.pos];
+  return id ? INDEX.get(id) || null : null;
+}
+
+function focusSkip() {
+  const f = ui.focus;
+  if (!f || !f.queue.length) return;
+  const id = f.queue.splice(f.pos, 1)[0];
+  f.queue.push(id);
+  if (f.pos >= f.queue.length) f.pos = 0;
+  render();
+}
+
+function focusResult(result) {
+  const node = focusCurrent();
+  if (!node || !result) return;
+  const noteEl = document.getElementById('focus-note');
+  const note = noteEl ? noteEl.value.trim() : '';
+  applyResultToNode(node, result);
+  node.reviewDate = todayISO();
+  if (note) node.notes = node.notes ? node.notes + '\n' + note : note;
+  logActivity('review', node, 'Evaluation set to ' + node.evaluationResult + (note ? ' · ' + note : ''));
+  saveState();
+  const f = ui.focus;
+  f.queue.splice(f.pos, 1);
+  if (f.pos >= f.queue.length) f.pos = 0;
+  render();
+  toast(node.name, '', 'Marked ' + node.evaluationResult +
+    (f.queue.length ? ' · ' + f.queue.length + ' remaining' : ' · queue complete'));
+}
+
 function applyResultToNode(node, result) {
   if (!node || !canReview(node)) return false;
   if (!result || result === 'Pending') node.evaluationResult = '';
@@ -674,6 +737,13 @@ function handleKeydown(e) {
   }
   const tag = (e.target.tagName || '').toLowerCase();
   const typing = tag === 'input' || tag === 'textarea' || tag === 'select';
+  if (ui.focus && !modalState && !drawerState && !typing) {
+    const k = e.key.toLowerCase();
+    if (k === 'p') { e.preventDefault(); focusResult('Passed'); return; }
+    if (k === 'n') { e.preventDefault(); focusResult('Need Revise'); return; }
+    if (k === 'x') { e.preventDefault(); focusResult('Reject'); return; }
+    if (k === 's') { e.preventDefault(); focusSkip(); return; }
+  }
   if (e.key === '/' && !typing) {
     e.preventDefault();
     const input = document.getElementById('global-search');

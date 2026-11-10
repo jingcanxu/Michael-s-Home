@@ -83,7 +83,8 @@ const ui = {
   },
   sort: { key: null, dir: 'asc' },
   queueLevel: 'all',
-  advanced: false
+  advanced: false,
+  focus: null
 };
 
 let state = null;
@@ -267,6 +268,14 @@ function scopeNodes() {
   return state.nodes.filter(canReview);
 }
 
+function focusQueueIds() {
+  return state.nodes.filter(canReview)
+    .filter(n => ui.queueLevel === 'all' || n.level === ui.queueLevel)
+    .filter(n => reviewStatus(n) === 'Pending' || reviewStatus(n) === 'Need Revise')
+    .sort(queueSort)
+    .map(n => n.id);
+}
+
 function reviewStats() {
   const scope = scopeNodes();
   const reviewed = scope.filter(n => n.evaluationResult);
@@ -364,6 +373,7 @@ function toast(message, type, detail) {
 
 function setView(view) {
   ui.view = view;
+  if (view !== 'review') ui.focus = null;
   if (location.hash !== '#/' + view) history.replaceState(null, '', '#/' + view);
   render();
   const main = document.querySelector('.content');
