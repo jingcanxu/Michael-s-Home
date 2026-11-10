@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Architecture Review Console · L3/L4</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b2545'/%3E%3Cpath d='M18 44 32 18l14 26h-8l-6-12-6 12z' fill='%23fff'/%3E%3C/svg%3E"/>
+<link rel="stylesheet" href="assets/styles.css"/>
+</head>
+<body>
+
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1.2"/><circle cx="3.5" cy="12" r="1.2"/><circle cx="3.5" cy="18" r="1.2"/></symbol>
+  <symbol id="i-review" viewBox="0 0 24 24"><path d="M9 11.5l2 2 4.5-4.5"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7"/><path d="M16 3h5v5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5"/><path d="M4 18v2h16v-2"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></symbol>
+  <symbol id="i-columns" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 4v16"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M8 4h12v12M4 20L20 4"/></symbol>
+  <symbol id="i-collapse" viewBox="0 0 24 24"><path d="M4 4h12v12M20 20L4 4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.5 9"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l9.5 17h-19z"/><path d="M12 9v5M12 17.5v.5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.5l3.5 2"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.8M17 20a5.5 5.5 0 0 0-2-4.3"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4L10 14"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/><path d="M10 11v5M14 11v5"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v5h5"/></symbol>
+  <symbol id="i-drag" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.3"/><circle cx="15" cy="6" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="9" cy="18" r="1.3"/><circle cx="15" cy="18" r="1.3"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h7V3M8 21v-6h8v6"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 4 12 2.5-6h5"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.5"/></symbol>
+  <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/></symbol>
+</svg>
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="brand-text">
+        <strong>Architecture</strong>
+        <span>Review Console</span>
+      </div>
+    </div>
+
+    <nav class="nav" aria-label="Primary">
+      <p class="nav-label">Workspace</p>
+      <a href="#/overview" class="nav-item" data-nav="overview">
+        <svg class="icon"><use href="#i-overview"></use></svg>
+        <span>Overview</span>
+      </a>
+      <a href="#/master" class="nav-item" data-nav="master">
+        <svg class="icon"><use href="#i-list"></use></svg>
+        <span>Master List</span>
+        <span class="nav-count" id="nav-master-count">0</span>
+      </a>
+      <a href="#/review" class="nav-item" data-nav="review">
+        <svg class="icon"><use href="#i-review"></use></svg>
+        <span>L3/L4 Review</span>
+        <span class="nav-count accent" id="nav-review-count">0</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-spacer"></div>
+
+    <div class="coverage-card">
+      <div class="coverage-head">
+        <span>Review coverage</span>
+        <strong id="sidebar-coverage">0%</strong>
+      </div>
+      <div class="coverage-track"><i id="sidebar-coverage-bar"></i></div>
+      <p id="sidebar-coverage-text">0 of 0 L3/L4 nodes reviewed</p>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="workspace-state">
+        <span class="status-dot"></span>
+        <div>
+          <strong>Local workspace</strong>
+          <small id="save-state">Changes save in this browser</small>
+        </div>
+      </div>
+      <button class="link-btn" data-action="reset-data">
+        <svg class="icon"><use href="#i-reset"></use></svg>
+        Reset sample data
+      </button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn mobile-menu" data-action="toggle-sidebar" aria-label="Open menu">
+        <svg class="icon"><use href="#i-menu"></use></svg>
+      </button>
+      <div class="page-ident">
+        <h1 id="page-title">Overview</h1>
+        <span id="page-subtitle">Architecture review workspace</span>
+      </div>
+      <div class="topbar-actions">
+        <label class="global-search" for="global-search">
+          <svg class="icon"><use href="#i-search"></use></svg>
+          <input id="global-search" type="search" placeholder="Search nodes, owners, IDs…" autocomplete="off" spellcheck="false"/>
+          <kbd>/</kbd>
+        </label>
+        <button class="btn ghost" data-action="import">
+          <svg class="icon"><use href="#i-upload"></use></svg>
+          <span class="btn-label">Import</span>
+        </button>
+        <div class="menu-wrap" data-menu="export">
+          <button class="btn ghost" data-action="toggle-menu" data-menu="export">
+            <svg class="icon"><use href="#i-download"></use></svg>
+            <span class="btn-label">Export</span>
+            <svg class="icon chev"><use href="#i-chevron-down"></use></svg>
+          </button>
+          <div class="menu" id="export-menu">
+            <button class="menu-item" data-action="export-xlsx">
+              <svg class="icon"><use href="#i-download"></use></svg>
+              <span><strong>Excel workbook</strong><small>All nodes + review log (.xlsx)</small></span>
+            </button>
+            <button class="menu-item" data-action="export-csv">
+              <svg class="icon"><use href="#i-list"></use></svg>
+              <span><strong>Current view</strong><small>Filtered rows as CSV</small></span>
+            </button>
+            <button class="menu-item" data-action="export-json">
+              <svg class="icon"><use href="#i-save"></use></svg>
+              <span><strong>Backup</strong><small>Full workspace as JSON</small></span>
+            </button>
+          </div>
+        </div>
+        <button class="btn primary" data-action="add-node">
+          <svg class="icon"><use href="#i-plus"></use></svg>
+          <span class="btn-label">Add node</span>
+        </button>
+      </div>
+    </header>
+
+    <main id="view" class="content"></main>
+  </div>
+</div>
+
+<div id="drawer-root"></div>
+<div id="modal-root"></div>
+<div id="toast-root" class="toast-root" aria-live="polite"></div>
+<input type="file" id="file-input" accept=".xlsx,.xls,.csv,.json" hidden/>
+
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="assets/seed-data.js"></script>
+<script src="assets/core.js"></script>
+<script src="assets/views.js"></script>
+<script src="assets/table.js"></script>
+<script src="assets/io.js"></script>
+<script src="assets/actions.js"></script>
+</body>
+</html>
