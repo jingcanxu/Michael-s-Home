@@ -71,6 +71,22 @@ function exportXlsx() {
   const wsLog = XLSX.utils.json_to_sheet(logRows);
   wsLog['!cols'] = [{ wch: 22 }, { wch: 26 }, { wch: 10 }, { wch: 20 }, { wch: 30 }, { wch: 54 }];
   XLSX.utils.book_append_sheet(wb, wsLog, 'Review Activity');
+  const histRows = [];
+  state.nodes.slice().sort(sortByRank).forEach(n => (n.history || []).forEach((h, i) => histRows.push({
+    'Node ID': n.nodeId,
+    'Node Name': n.name,
+    'Round': i + 1,
+    'Result': h.result,
+    'Reviewer': h.reviewer,
+    'Review Date': h.reviewDate,
+    'Note': h.note,
+    'Recorded At': h.ts
+  })));
+  const wsHist = XLSX.utils.json_to_sheet(histRows, {
+    header: ['Node ID', 'Node Name', 'Round', 'Result', 'Reviewer', 'Review Date', 'Note', 'Recorded At']
+  });
+  wsHist['!cols'] = [{ wch: 20 }, { wch: 30 }, { wch: 7 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 50 }, { wch: 22 }];
+  XLSX.utils.book_append_sheet(wb, wsHist, 'Review History');
   XLSX.writeFile(wb, exportWorkbookFilename('xlsx'));
   toast('Excel workbook exported', '', rows.length + ' nodes · review activity included');
 }

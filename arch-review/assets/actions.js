@@ -399,6 +399,7 @@ function saveDrawer() {
   node.lastModified = todayISO();
 
   if (oldResult !== patch.evaluationResult) {
+    if (patch.evaluationResult) pushReviewHistory(node, patch.notes);
     logActivity('review', node, patch.evaluationResult
       ? 'Evaluation set to ' + patch.evaluationResult
       : 'Evaluation cleared');
@@ -470,7 +471,7 @@ function focusResult(result) {
   if (!node || !result) return;
   const noteEl = document.getElementById('focus-note');
   const note = noteEl ? noteEl.value.trim() : '';
-  applyResultToNode(node, result);
+  applyResultToNode(node, result, note);
   node.reviewDate = todayISO();
   if (note) node.notes = node.notes ? node.notes + '\n' + note : note;
   logActivity('review', node, 'Evaluation set to ' + node.evaluationResult + (note ? ' · ' + note : ''));
@@ -483,13 +484,14 @@ function focusResult(result) {
     (f.queue.length ? ' · ' + f.queue.length + ' remaining' : ' · queue complete'));
 }
 
-function applyResultToNode(node, result) {
+function applyResultToNode(node, result, note) {
   if (!node || !canReview(node)) return false;
   if (!result || result === 'Pending') node.evaluationResult = '';
   else node.evaluationResult = result;
   if (node.evaluationResult) {
     if (!node.reviewDate) node.reviewDate = todayISO();
     if (!node.reviewer) node.reviewer = USER.name;
+    pushReviewHistory(node, note);
   }
   node.lastModified = todayISO();
   return true;

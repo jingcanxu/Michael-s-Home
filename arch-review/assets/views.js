@@ -370,7 +370,7 @@ function renderFocus() {
 
   const prev = node.evaluationResult
     ? '<div class="focus-prev ' + (node.evaluationResult === 'Need Revise' ? 'revise' : '') + '">' + icon('alert') +
-      '<div><strong>Previously marked ' + esc(node.evaluationResult) + '</strong>' +
+      '<div><strong>Round ' + (node.history || []).length + ' · Previously marked ' + esc(node.evaluationResult) + '</strong>' +
       '<span>' + esc([node.reviewer, node.reviewDate ? fmtDate(node.reviewDate) : ''].filter(Boolean).join(' · ') || 'No reviewer recorded') + '</span>' +
       (node.notes ? '<p>' + esc(node.notes) + '</p>' : '') + '</div></div>'
     : '';

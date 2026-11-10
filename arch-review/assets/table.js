@@ -381,7 +381,31 @@ function drawerReviewHTML(node) {
       '<div style="display:flex;justify-content:flex-end">' +
         '<button class="btn ghost sm" data-action="clear-result">Clear result</button>' +
       '</div>' +
+    '</section>' +
+    '<section class="form-section">' +
+      '<div class="form-section-head"><h3>Review history</h3><span class="meta">' +
+        (node.history || []).length + ' round' + ((node.history || []).length === 1 ? '' : 's') + '</span></div>' +
+      reviewHistoryHTML(node) +
     '</section>';
+}
+
+function reviewHistoryHTML(node) {
+  const history = node.history || [];
+  if (!history.length) return '<div class="timeline-empty">No review rounds recorded yet.</div>';
+  return '<div class="mini-timeline">' + history.slice().reverse().map((h, i) => {
+    const round = history.length - i;
+    const tone = h.result === 'Passed' ? 'green' : h.result === 'Need Revise' ? 'amber' : 'red';
+    const ico = h.result === 'Passed' ? 'check-circle' : h.result === 'Need Revise' ? 'alert' : 'close';
+    return '<div class="timeline-item">' +
+      '<span class="timeline-ico ' + tone + '">' + icon(ico) + '</span>' +
+      '<div class="timeline-main">' +
+        '<p><b>Round ' + round + '</b> · ' + esc(h.result) + (h.reviewer ? ' · ' + esc(h.reviewer) : '') + '</p>' +
+        (h.note ? '<p class="history-note">' + esc(h.note) + '</p>' : '') +
+        '<time>' + esc(h.reviewDate ? fmtDate(h.reviewDate) : fmtDateTime(h.ts)) + '</time>' +
+      '</div>' +
+      '<span class="history-pill">' + evalPill({ evaluationResult: h.result }) + '</span>' +
+    '</div>';
+  }).join('') + '</div>';
 }
 
 function resultOption(value, cls, sub, iconName) {

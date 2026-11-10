@@ -718,6 +718,10 @@ h1, h2, h3, h4, p { margin: 0; }
   .focus-keys { display: none; }
 }
 
+/* ---------------- Review history ---------------- */
+.history-note { margin: 3px 0 0; font-size: 11.5px; color: var(--ink-2); line-height: 1.5; white-space: pre-wrap; }
+.timeline-item .history-pill { margin-left: auto; align-self: flex-start; flex-shrink: 0; }
+
 /* ---------------- Drawer ---------------- */
 .drawer-overlay {
   position: fixed; inset: 0; background: rgba(9, 20, 38, .42);

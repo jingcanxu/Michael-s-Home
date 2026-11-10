@@ -144,7 +144,37 @@ function normalizeNode(raw) {
   const rank = Number(n.rankId);
   n.rankId = isFinite(rank) && rank > 0 ? rank : null;
   n.parentId = n.parentId || null;
+  n.history = Array.isArray(n.history)
+    ? n.history.filter(h => h && REVIEW_STATES.includes(h.result)).map(h => ({
+        ts: String(h.ts || ''),
+        result: h.result,
+        reviewer: String(h.reviewer || ''),
+        reviewDate: String(h.reviewDate || ''),
+        note: String(h.note || '')
+      }))
+    : [];
+  if (!n.history.length && REVIEW_STATES.includes(n.evaluationResult)) {
+    n.history.push({
+      ts: n.reviewDate || n.lastModified || '',
+      result: n.evaluationResult,
+      reviewer: n.reviewer || '',
+      reviewDate: n.reviewDate || '',
+      note: ''
+    });
+  }
   return n;
+}
+
+function pushReviewHistory(node, note) {
+  if (!REVIEW_STATES.includes(node.evaluationResult)) return;
+  if (!Array.isArray(node.history)) node.history = [];
+  node.history.push({
+    ts: new Date().toISOString(),
+    result: node.evaluationResult,
+    reviewer: node.reviewer || USER.name,
+    reviewDate: node.reviewDate || todayISO(),
+    note: String(note || '').trim()
+  });
 }
 
 function defaultState() {
