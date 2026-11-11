@@ -412,7 +412,7 @@ function saveDrawer() {
   draftDirty = false;
   renderDrawer();
   render();
-  toast('Changes saved', '', node.nodeId + ' · ' + node.name);
+  toast('Changes saved', '', node.name);
 }
 
 function setDraftResult(result) {
@@ -553,7 +553,7 @@ function updateAddParentSelect() {
     } else if (parents.length) {
       select.innerHTML = parents.map(p =>
         '<option value="' + esc(p.id) + '"' + (p.id === modalState.parentId ? ' selected' : '') + '>' +
-        esc(p.nodeId) + ' — ' + esc(p.name) + '</option>').join('');
+        esc(p.name) + ' (' + esc(p.level) + ')</option>').join('');
     } else {
       select.innerHTML = '<option value="">No ' + LEVELS[LEVEL_RANK[level] - 2] + ' nodes available</option>';
     }
@@ -563,9 +563,7 @@ function updateAddParentSelect() {
 }
 
 function updateAddAutoFields() {
-  const nodeIdInput = document.getElementById('add-node-id');
   const rankInput = document.getElementById('add-rank-id');
-  if (nodeIdInput) nodeIdInput.value = nextNodeId(modalState.level, modalState.parentId) || '';
   if (rankInput) {
     const rank = nextRank(modalState.level, modalState.parentId);
     rankInput.value = rank == null ? '' : rank;
@@ -584,18 +582,18 @@ function createNode() {
     toast('Name is required', 'error', 'Enter the L3 feature or L4 function name.');
     return;
   }
-  const nodeId = get('nodeId');
-  if (!nodeId) {
-    toast('Node ID is required', 'error');
-    return;
-  }
-  if (state.nodes.some(n => n.nodeId === nodeId)) {
-    toast('Node ID already exists', 'error', nodeId + ' is already used by another node.');
-    return;
-  }
   const parentId = level === 'L1' ? null : (get('parentId') || modalState.parentId);
   if (level !== 'L1' && (!parentId || !INDEX.has(parentId))) {
     toast('Select a parent node', 'error', 'Create the parent level first.');
+    return;
+  }
+  const nodeId = get('nodeId') || nextNodeId(level, parentId);
+  if (!nodeId) {
+    toast('Unable to generate an internal ID', 'error');
+    return;
+  }
+  if (state.nodes.some(n => n.nodeId === nodeId)) {
+    toast('Duplicate node detected', 'error', 'Please try again.');
     return;
   }
   const rankInput = get('rankId');
@@ -627,7 +625,7 @@ function createNode() {
   renderModal();
   render();
   openDrawer(node.id);
-  toast('Node created', '', node.nodeId + ' · ' + node.name);
+  toast('Node created', '', node.name);
 }
 
 function requestDelete(node) {
@@ -653,7 +651,7 @@ function requestDelete(node) {
       saveState();
       closeDrawer(true);
       render();
-      toast('Node deleted', '', node.nodeId);
+      toast('Node deleted', '', node.name);
     }
   });
 }

@@ -110,7 +110,7 @@ function masterResultsHTML() {
     const cells = cols.map(c => renderCell(c, node, r.depth)).join('');
     const reviewLabel = canReview(node) ? 'Review' : 'Open';
     return '<tr class="' + selected.trim() + '" data-id="' + esc(node.id) + '" data-action="open-drawer" data-node-id="' + esc(node.id) + '">' +
-      '<td class="sel-col"><input type="checkbox" data-select-node="' + esc(node.id) + '"' + (selection.has(node.id) ? ' checked' : '') + ' aria-label="Select ' + esc(node.nodeId) + '"/></td>' +
+      '<td class="sel-col"><input type="checkbox" data-select-node="' + esc(node.id) + '"' + (selection.has(node.id) ? ' checked' : '') + ' aria-label="Select ' + esc(node.name || 'node') + '"/></td>' +
       cells +
       '<td class="actions-col"><button class="btn xs ghost row-review-btn" data-action="open-drawer" data-id="' + esc(node.id) + '">' + reviewLabel + '</button></td>' +
     '</tr>';
@@ -119,7 +119,7 @@ function masterResultsHTML() {
   return '<table class="master-table">' + colgroup + '<thead>' + groupRow + colRow + '</thead><tbody>' + body + '</tbody></table>';
 }
 
-function nodeIdCell(node, depth) {
+function treePrefix(node, depth) {
   const treeMode = !ui.sort.key && !hasActiveFilters();
   const kids = childrenOf(node.id).length;
   const collapsed = state.settings.collapsed.includes(node.id);
@@ -127,19 +127,16 @@ function nodeIdCell(node, depth) {
     ? '<button class="tree-toggle" data-action="toggle-collapse" data-id="' + esc(node.id) + '" aria-label="Toggle children">' +
       icon(collapsed ? 'chevron-right' : 'chevron-down') + '</button>'
     : '<span class="tree-spacer"></span>';
-  const indent = treeMode ? Math.min(depth, 3) * 13 : 0;
-  return '<div class="node-id-cell" style="padding-left:' + indent + 'px">' + toggle +
-    '<span class="mono">' + esc(node.nodeId || '—') + '</span></div>';
+  const indent = treeMode ? Math.min(depth, 3) * 10 : 0;
+  return '<span class="tree-prefix" style="padding-left:' + indent + 'px">' + toggle + '</span>';
 }
 
 function renderCell(col, node, depth) {
   switch (col.key) {
     case 'rankId':
       return '<td class="mono-cell">' + (node.rankId == null ? '—' : esc(node.rankId)) + '</td>';
-    case 'nodeId':
-      return '<td>' + nodeIdCell(node, depth) + '</td>';
     case 'level':
-      return '<td>' + levelBadge(node.level) + '</td>';
+      return '<td class="level-cell">' + treePrefix(node, depth) + levelBadge(node.level) + '</td>';
     case 'l1':
     case 'l2':
     case 'l3':
@@ -275,7 +272,7 @@ function renderDrawer() {
         '<div class="drawer-title-row">' +
           levelBadge(node.level, true) +
           '<div class="drawer-title-main"><h2>' + esc(node.name || '(unnamed)') + '</h2>' +
-            '<div class="drawer-sub"><span class="mono">' + esc(node.nodeId) + '</span><span>·</span>' +
+            '<div class="drawer-sub">' +
               '<span>RankID ' + (node.rankId == null ? '—' : esc(node.rankId)) + '</span><span>·</span>' +
               '<span>' + esc(node.source || 'Master list') + '</span></div>' +
           '</div>' +
@@ -316,8 +313,7 @@ function drawerDetailsHTML(node) {
         fieldHTML('Name', 'name', draft.name, { full: true, placeholder: 'Node name' }) +
         fieldHTML('Level', 'level', node.level, { readonly: true, helper: 'Level is fixed after creation' }) +
         fieldHTML('RankID', 'rankId', node.rankId == null ? '' : node.rankId, { readonly: true }) +
-        fieldHTML('Node ID', 'nodeId', node.nodeId, { readonly: true }) +
-        fieldHTML('Parent', 'parentId', node.parentId ? (INDEX.get(node.parentId) || {}).nodeId || '' : '—', { readonly: true }) +
+        fieldHTML('Parent', 'parentId', node.parentId ? (INDEX.get(node.parentId) || {}).name || '' : '—', { readonly: true }) +
         fieldHTML('Source', 'source', node.source, { readonly: true }) +
         fieldHTML('Description', 'description', draft.description, { type: 'textarea', full: true, placeholder: 'What this node covers / scope notes' }) +
       '</div>' +
@@ -504,7 +500,7 @@ function renderModal() {
     '<div class="modal" role="dialog" aria-modal="true" data-stop-modal="1">' +
       '<div class="modal-head">' +
         '<span class="modal-ico">' + icon('plus') + '</span>' +
-        '<div><h2>Add architecture node</h2><p>Create an L1–L4 entry. The Node ID and RankID are generated from the hierarchy.</p></div>' +
+        '<div><h2>Add architecture node</h2><p>Create an L1–L4 entry. The RankID is generated from the hierarchy.</p></div>' +
         '<button class="icon-btn" data-action="close-modal" aria-label="Close">' + icon('close') + '</button>' +
       '</div>' +
       '<div class="modal-body">' +
@@ -514,8 +510,6 @@ function renderModal() {
           addParentField() +
           '<div class="field full"><label for="add-name">Name <span class="req">*</span></label>' +
             '<input id="add-name" data-add-field="name" type="text" placeholder="L3 feature or L4 function name"/></div>' +
-          '<div class="field"><label for="add-node-id">Node ID</label>' +
-            '<input id="add-node-id" data-add-field="nodeId" type="text"/></div>' +
           '<div class="field"><label for="add-rank-id">RankID</label>' +
             '<input id="add-rank-id" data-add-field="rankId" type="text"/></div>' +
           '<div class="field"><label for="add-dt-owner">DT Owner</label>' +
@@ -553,7 +547,7 @@ function addParentField() {
     '<select id="add-parent" data-add-field="parentId"' + (modalState.level === 'L1' ? ' disabled' : '') + '>' +
       (modalState.level === 'L1' ? '<option value="">— Top level —</option>' :
         options.length ? options.map(p => '<option value="' + esc(p.id) + '"' + (p.id === modalState.parentId ? ' selected' : '') + '>' +
-          esc(p.nodeId) + ' — ' + esc(p.name) + '</option>').join('') :
+          esc(p.name) + ' (' + esc(p.level) + ')</option>').join('') :
         '<option value="">No ' + LEVELS[LEVEL_RANK[modalState.level] - 2] + ' nodes available</option>') +
     '</select></div>';
 }

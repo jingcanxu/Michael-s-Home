@@ -25,8 +25,7 @@ const GROUP_META = {
 
 const COLUMNS = [
   { key: 'rankId', label: 'RankID', group: 'identification', width: 102 },
-  { key: 'nodeId', label: 'Node ID', group: 'identification', width: 176 },
-  { key: 'level', label: 'Level', group: 'identification', width: 62 },
+  { key: 'level', label: 'Level', group: 'identification', width: 92 },
   { key: 'l1', label: 'L1 Application', group: 'identification', width: 104 },
   { key: 'l2', label: 'L2 Application', group: 'identification', width: 132 },
   { key: 'l3', label: 'L3 Feature / Module', group: 'identification', width: 208 },
@@ -57,7 +56,7 @@ const COLUMNS = [
 ];
 
 const DEFAULT_COLUMNS = [
-  'rankId', 'nodeId', 'level', 'l1', 'l2', 'l3', 'l4', 'description',
+  'rankId', 'level', 'l1', 'l2', 'l3', 'l4', 'description',
   'dtOwner', 'status', 'priority', 'lockStatus', 'evaluationResult',
   'aiScore', 'reviewDate'
 ];

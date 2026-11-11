@@ -325,7 +325,7 @@ function reviewCard(n) {
     '</button>';
   }).join('');
   return '<article class="review-card" draggable="true" data-id="' + esc(n.id) + '" data-action="open-drawer" data-node-id="' + esc(n.id) + '">' +
-    '<div class="review-card-top">' + levelBadge(n.level) + '<span class="node-id">' + esc(n.nodeId) + '</span>' +
+    '<div class="review-card-top">' + levelBadge(n.level) +
       (n.aiScore !== '' ? '<span class="ai-chip">AI ' + esc(n.aiScore) + '</span>' : '') + '</div>' +
     '<h4>' + esc(n.name || '(unnamed)') + '</h4>' +
     '<div class="card-crumb">' + esc(crumb || 'Top-level') + '</div>' +
@@ -388,7 +388,7 @@ function renderFocus() {
     '</div>' +
     '<div class="focus-grid">' +
       '<section class="focus-card panel">' +
-        '<div class="focus-card-top">' + levelBadge(node.level) + '<span class="node-id">' + esc(node.nodeId) + '</span>' +
+        '<div class="focus-card-top">' + levelBadge(node.level) +
           '<span class="focus-pos">#' + (f.pos + 1) + ' in queue</span></div>' +
         '<h2 class="focus-name">' + esc(node.name || '(unnamed)') + '</h2>' +
         '<div class="card-crumb">' + esc(crumb || 'Top-level') + '</div>' +
@@ -410,10 +410,12 @@ function renderFocus() {
       '<aside class="focus-side">' +
         '<div class="panel focus-next"><div class="panel-head"><div><h3>Up next</h3><p>' + nextItems.length + ' of ' + Math.max(0, f.queue.length - 1) + ' after this</p></div></div>' +
           '<div class="focus-next-list">' +
-            (nextItems.length ? nextItems.map(n =>
-              '<div class="focus-next-item">' + levelBadge(n.level) +
-                '<div class="focus-next-main"><strong>' + esc(n.name || '(unnamed)') + '</strong><span>' + esc(n.nodeId) + '</span></div>' +
-                priorityPill(n.priority) + '</div>').join('')
+            (nextItems.length ? nextItems.map(n => {
+              const path = chain(n).slice(0, -1).map(x => x.name).filter(Boolean).join(' / ');
+              return '<div class="focus-next-item">' + levelBadge(n.level) +
+                '<div class="focus-next-main"><strong>' + esc(n.name || '(unnamed)') + '</strong><span>' + esc(path || 'Top-level') + '</span></div>' +
+                priorityPill(n.priority) + '</div>';
+            }).join('')
               : '<div class="board-empty" style="padding:14px">This is the last one</div>') +
           '</div>' +
         '</div>' +
