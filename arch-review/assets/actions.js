@@ -380,6 +380,8 @@ function saveDrawer() {
     priority: OPTIONS.priority.includes(draft.priority) ? draft.priority : '—',
     lockStatus: OPTIONS.lockStatus.includes(draft.lockStatus) ? draft.lockStatus : '-',
     sharedAcross: String(draft.sharedAcross || '').trim(),
+    prdVersion: String(draft.prdVersion || '').trim(),
+    changeProject: String(draft.changeProject || '').trim(),
     notes: String(draft.notes || '').trim(),
     reviewer: String(draft.reviewer || '').trim(),
     reviewDate: String(draft.reviewDate || '').trim(),
@@ -471,6 +473,10 @@ function focusResult(result) {
   if (!node || !result) return;
   const noteEl = document.getElementById('focus-note');
   const note = noteEl ? noteEl.value.trim() : '';
+  const projectEl = document.getElementById('focus-project');
+  const versionEl = document.getElementById('focus-version');
+  if (projectEl && projectEl.value.trim()) node.changeProject = projectEl.value.trim();
+  if (versionEl && versionEl.value.trim()) node.prdVersion = versionEl.value.trim();
   applyResultToNode(node, result, note);
   node.reviewDate = todayISO();
   if (note) node.notes = node.notes ? node.notes + '\n' + note : note;

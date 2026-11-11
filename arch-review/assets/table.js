@@ -159,6 +159,10 @@ function renderCell(col, node, depth) {
       return '<td>' + ownerCell(node.dtOwner) + '</td>';
     case 'experienceLevel':
       return '<td>' + (node.experienceLevel ? '<span class="pill outline">' + esc(node.experienceLevel) + '</span>' : '<span class="cell-empty">—</span>') + '</td>';
+    case 'prdVersion':
+      return '<td>' + (node.prdVersion ? '<span class="pill outline">' + esc(node.prdVersion) + '</span>' : '<span class="cell-empty">—</span>') + '</td>';
+    case 'changeProject':
+      return '<td><span class="cell-clip" title="' + esc(node.changeProject) + '">' + (node.changeProject ? esc(node.changeProject) : '<span class="cell-empty">—</span>') + '</span></td>';
     case 'prdLink':
     case 'fsLink':
       return '<td>' + linkCell(node[col.key]) + '</td>';
@@ -353,6 +357,15 @@ function drawerDetailsHTML(node) {
     '</section>';
 }
 
+function distinctValues(key) {
+  const seen = {};
+  state.nodes.forEach(n => {
+    const v = String(n[key] || '').trim();
+    if (v) seen[v] = true;
+  });
+  return Object.keys(seen).sort();
+}
+
 function drawerReviewHTML(node) {
   return '<div class="info-banner">' + icon('info') +
       '<span>Evaluation Results and AI Self Evaluation Score follow the Excel master list. Results are tracked for L3/L4 nodes.</span></div>' +
@@ -368,12 +381,16 @@ function drawerReviewHTML(node) {
     '<section class="form-section">' +
       '<div class="form-section-head"><h3>Review details</h3></div>' +
       '<div class="form-grid">' +
+        fieldHTML('Change Project / CR', 'changeProject', draft.changeProject, { list: 'project-options', placeholder: 'Project that changed this PRD' }) +
+        fieldHTML('PRD Version (Active)', 'prdVersion', draft.prdVersion, { list: 'version-options', placeholder: 'e.g. v1.2' }) +
         fieldHTML('Reviewer', 'reviewer', draft.reviewer, { placeholder: 'Reviewer name' }) +
         fieldHTML('Review Date', 'reviewDate', draft.reviewDate, { type: 'date' }) +
         fieldHTML('AI Self Evaluation Score', 'aiScore', draft.aiScore, { type: 'number', min: 0, max: 100, suffix: '/ 100', placeholder: '0 – 100' }) +
         fieldHTML('Notes', 'notes', draft.notes, { type: 'textarea', full: true, placeholder: 'Review comments, conditions, follow-ups…' }) +
       '</div>' +
-      '<div class="field helper" style="padding:2px 0 10px">Scores and review dates are stored with the node and included in the Excel export.</div>' +
+      '<datalist id="project-options">' + distinctValues('changeProject').map(v => '<option value="' + esc(v) + '"></option>').join('') + '</datalist>' +
+      '<datalist id="version-options">' + distinctValues('prdVersion').map(v => '<option value="' + esc(v) + '"></option>').join('') + '</datalist>' +
+      '<div class="field helper" style="padding:2px 0 10px">The project and PRD version are recorded with each review round, so every result is traceable to the change that triggered it.</div>' +
       '<div style="display:flex;justify-content:flex-end">' +
         '<button class="btn ghost sm" data-action="clear-result">Clear result</button>' +
       '</div>' +
@@ -396,6 +413,10 @@ function reviewHistoryHTML(node) {
       '<span class="timeline-ico ' + tone + '">' + icon(ico) + '</span>' +
       '<div class="timeline-main">' +
         '<p><b>Round ' + round + '</b> · ' + esc(h.result) + (h.reviewer ? ' · ' + esc(h.reviewer) : '') + '</p>' +
+        ((h.project || h.version) ? '<p class="history-trace">' +
+          (h.project ? 'Project: <b>' + esc(h.project) + '</b>' : '') +
+          (h.project && h.version ? ' · ' : '') +
+          (h.version ? 'PRD ' + esc(h.version) : '') + '</p>' : '') +
         (h.note ? '<p class="history-note">' + esc(h.note) + '</p>' : '') +
         '<time>' + esc(h.reviewDate ? fmtDate(h.reviewDate) : fmtDateTime(h.ts)) + '</time>' +
       '</div>' +

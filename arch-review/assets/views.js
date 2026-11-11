@@ -397,6 +397,14 @@ function renderFocus() {
         '<div class="focus-meta">' + meta.map(m =>
           '<div class="focus-meta-item"><label>' + esc(m[0]) + '</label><span>' + m[1] + '</span></div>').join('') + '</div>' +
         (links.length ? '<div class="focus-links">' + links.join('') + '</div>' : '') +
+        '<div class="focus-trace">' +
+          '<div class="focus-trace-field"><label for="focus-project">Change project</label>' +
+            '<input id="focus-project" type="text" list="focus-project-options" value="' + esc(node.changeProject || '') + '" placeholder="Project / CR that changed this PRD"/></div>' +
+          '<div class="focus-trace-field"><label for="focus-version">PRD version</label>' +
+            '<input id="focus-version" type="text" list="focus-version-options" value="' + esc(node.prdVersion || '') + '" placeholder="e.g. v1.2"/></div>' +
+          '<datalist id="focus-project-options">' + distinctValues('changeProject').map(v => '<option value="' + esc(v) + '"></option>').join('') + '</datalist>' +
+          '<datalist id="focus-version-options">' + distinctValues('prdVersion').map(v => '<option value="' + esc(v) + '"></option>').join('') + '</datalist>' +
+        '</div>' +
         '<div class="focus-note-wrap"><label for="focus-note">Review note <span class="meta">optional — saved with the result</span></label>' +
           '<textarea id="focus-note" rows="2" placeholder="Conditions, follow-ups, reasons…"></textarea></div>' +
         '<div class="focus-actions">' +

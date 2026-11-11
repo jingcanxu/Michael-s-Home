@@ -38,6 +38,8 @@ const COLUMNS = [
   { key: 'experienceLevel', label: 'Experience Level', group: 'identification', width: 94 },
   { key: 'techStack', label: 'Tech Stack', group: 'identification', width: 108 },
   { key: 'prdLink', label: 'PRD Link (L3)', group: 'identification', width: 180 },
+  { key: 'prdVersion', label: 'PRD Version (Active)', group: 'identification', width: 118 },
+  { key: 'changeProject', label: 'Change Project', group: 'identification', width: 150 },
   { key: 'itOwner', label: 'IT Owner', group: 'identification', width: 104 },
   { key: 'fsLink', label: 'FS Link (L4)', group: 'identification', width: 170 },
   { key: 'status', label: 'Status', group: 'governance', width: 86 },
@@ -56,7 +58,7 @@ const COLUMNS = [
 ];
 
 const DEFAULT_COLUMNS = [
-  'rankId', 'level', 'l1', 'l2', 'l3', 'l4', 'description',
+  'rankId', 'level', 'l1', 'l2', 'l3', 'l4', 'prdVersion', 'description',
   'dtOwner', 'status', 'priority', 'lockStatus', 'evaluationResult',
   'aiScore', 'reviewDate'
 ];
@@ -65,7 +67,7 @@ const EXPORT_HEADERS = [
   'RankID', 'Node ID', 'Level', 'L1 Application', 'L2 Application',
   'L3 Feature/module', 'L4 Function Name', 'Description', 'CFC Related',
   'Owner Biz Team', 'DT Owner', 'Shadow Owner', 'Experience Level', 'Tech Stack',
-  'PRD Link (L3)', 'IT Owner', 'FS Link(L4)', 'Status', 'Change Type', 'Priority',
+  'PRD Link (L3)', 'PRD Version (Active)', 'Change Project', 'IT Owner', 'FS Link(L4)', 'Status', 'Change Type', 'Priority',
   'Shared Across (Projects)', 'Lock Status', 'Evaluation Results',
   'AI Self Evaluation Score', 'Reviewer', 'Created', 'Last Modified', 'Review Date',
   'Notes', 'Source'
@@ -133,7 +135,7 @@ function normalizeNode(raw) {
   else if (n.aiScore === '' || n.aiScore == null || isNaN(Number(n.aiScore))) n.aiScore = '';
   else n.aiScore = Math.max(0, Math.min(100, Math.round(Number(n.aiScore))));
   ['description', 'cfcRelated', 'ownerBizTeam', 'dtOwner', 'shadowOwner', 'experienceLevel',
-    'techStack', 'prdLink', 'itOwner', 'fsLink', 'status', 'changeType', 'priority',
+    'techStack', 'prdLink', 'prdVersion', 'changeProject', 'itOwner', 'fsLink', 'status', 'changeType', 'priority',
     'sharedAcross', 'lockStatus', 'created', 'lastModified', 'reviewDate', 'notes',
     'reviewer', 'source'].forEach(k => { n[k] = n[k] == null ? '' : String(n[k]); });
   if (!n.status) n.status = 'Active';
@@ -149,7 +151,9 @@ function normalizeNode(raw) {
         result: h.result,
         reviewer: String(h.reviewer || ''),
         reviewDate: String(h.reviewDate || ''),
-        note: String(h.note || '')
+        note: String(h.note || ''),
+        project: String(h.project || ''),
+        version: String(h.version || '')
       }))
     : [];
   if (!n.history.length && REVIEW_STATES.includes(n.evaluationResult)) {
@@ -158,7 +162,9 @@ function normalizeNode(raw) {
       result: n.evaluationResult,
       reviewer: n.reviewer || '',
       reviewDate: n.reviewDate || '',
-      note: ''
+      note: '',
+      project: n.changeProject || '',
+      version: n.prdVersion || ''
     });
   }
   return n;
@@ -172,14 +178,16 @@ function pushReviewHistory(node, note) {
     result: node.evaluationResult,
     reviewer: node.reviewer || USER.name,
     reviewDate: node.reviewDate || todayISO(),
-    note: String(note || '').trim()
+    note: String(note || '').trim(),
+    project: String(node.changeProject || '').trim(),
+    version: String(node.prdVersion || '').trim()
   });
 }
 
 function defaultState() {
   const seed = deepCopy(window.SEED_DATA || { nodes: [], activity: [] });
   return {
-    version: 1,
+    version: 2,
     nodes: seed.nodes.map(normalizeNode),
     activity: (seed.activity || []).map(a => Object.assign({ actor: USER.name }, a)),
     settings: {
@@ -201,6 +209,15 @@ function loadState() {
     parsed.settings.visibleColumns = Array.isArray(parsed.settings.visibleColumns) && parsed.settings.visibleColumns.length
       ? parsed.settings.visibleColumns.filter(k => COLUMNS.some(c => c.key === k))
       : DEFAULT_COLUMNS.slice();
+    if (!parsed.version || parsed.version < 2) {
+      if (!parsed.settings.visibleColumns.includes('prdVersion')) {
+        const cols = parsed.settings.visibleColumns.slice();
+        const at = cols.indexOf('l4');
+        cols.splice(at >= 0 ? at + 1 : cols.length, 0, 'prdVersion');
+        parsed.settings.visibleColumns = cols;
+      }
+      parsed.version = 2;
+    }
     parsed.settings.collapsed = Array.isArray(parsed.settings.collapsed) ? parsed.settings.collapsed : [];
     return parsed;
   } catch (err) {

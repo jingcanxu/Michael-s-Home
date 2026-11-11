@@ -28,6 +28,8 @@ function exportRow(node) {
     'Experience Level': node.experienceLevel,
     'Tech Stack': node.techStack,
     'PRD Link (L3)': node.prdLink,
+    'PRD Version (Active)': node.prdVersion,
+    'Change Project': node.changeProject,
     'IT Owner': node.itOwner,
     'FS Link(L4)': node.fsLink,
     'Status': node.status,
@@ -79,13 +81,15 @@ function exportXlsx() {
     'Result': h.result,
     'Reviewer': h.reviewer,
     'Review Date': h.reviewDate,
+    'Project': h.project,
+    'PRD Version': h.version,
     'Note': h.note,
     'Recorded At': h.ts
   })));
   const wsHist = XLSX.utils.json_to_sheet(histRows, {
-    header: ['Node ID', 'Node Name', 'Round', 'Result', 'Reviewer', 'Review Date', 'Note', 'Recorded At']
+    header: ['Node ID', 'Node Name', 'Round', 'Result', 'Reviewer', 'Review Date', 'Project', 'PRD Version', 'Note', 'Recorded At']
   });
-  wsHist['!cols'] = [{ wch: 20 }, { wch: 30 }, { wch: 7 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 50 }, { wch: 22 }];
+  wsHist['!cols'] = [{ wch: 20 }, { wch: 30 }, { wch: 7 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 24 }, { wch: 14 }, { wch: 50 }, { wch: 22 }];
   XLSX.utils.book_append_sheet(wb, wsHist, 'Review History');
   XLSX.writeFile(wb, exportWorkbookFilename('xlsx'));
   toast('Excel workbook exported', '', rows.length + ' nodes · review activity included');
@@ -105,7 +109,7 @@ function exportCsv() {
 
 function exportJson() {
   const payload = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     nodes: state.nodes,
     activity: state.activity
@@ -163,7 +167,7 @@ function promptImport(nodes, filename) {
 function applyImport(nodes, filename) {
   const visible = state.settings.visibleColumns;
   state = {
-    version: 1,
+    version: 2,
     nodes: nodes,
     activity: [],
     settings: { visibleColumns: visible.length ? visible : DEFAULT_COLUMNS.slice(), collapsed: [] }
@@ -260,6 +264,8 @@ function parseWorkbook(wb) {
       exp: find(h => h === 'experience level'),
       tech: find(h => h === 'tech stack'),
       prd: find(h => h.indexOf('prd link') === 0),
+      prdVersion: find(h => h.indexOf('prd version') === 0),
+      changeProject: find(h => h.indexOf('change project') === 0),
       it: find(h => h === 'it owner'),
       fs: find(h => h.indexOf('fs link') === 0),
       status: find(h => h === 'status'),
@@ -307,6 +313,8 @@ function parseWorkbook(wb) {
         experienceLevel: cellText(get('exp')),
         techStack: cellText(get('tech')),
         prdLink: cellText(get('prd')),
+        prdVersion: cellText(get('prdVersion')),
+        changeProject: cellText(get('changeProject')),
         itOwner: cellText(get('it')),
         fsLink: cellText(get('fs')),
         status: cellText(get('status')) || 'Active',
