@@ -1,7 +1,7 @@
 /* Architecture Review Console — core data, state, helpers */
 'use strict';
 
-const STORAGE_KEY = 'archReview.workspace.v4';
+const STORAGE_KEY = 'archReview.workspace.v5';
 const LEVELS = ['L1', 'L2', 'L3', 'L4'];
 const LEVEL_RANK = { L1: 1, L2: 2, L3: 3, L4: 4 };
 const REVIEW_STATES = ['Passed', 'Need Revise', 'Reject'];
@@ -216,10 +216,20 @@ function seedMeetings(nodes) {
   if (prdRows && prdRows.length) {
     const byNodeId = new Map();
     nodes.forEach(n => { if (n.nodeId) byNodeId.set(n.nodeId, n); });
+    const resolveNode = raw => {
+      let id = String(raw || '').trim();
+      while (id) {
+        if (byNodeId.has(id)) return byNodeId.get(id);
+        const cut = id.lastIndexOf('-');
+        if (cut < 1) return null;
+        id = id.slice(0, cut);
+      }
+      return null;
+    };
     return prdRows.map((r, i) => normalizeMeeting({
       id: 'prd-' + (r.prdId || i),
       title: r.topic,
-      nodeRef: (byNodeId.get(r.nodeId) || {}).id || '',
+      nodeRef: (resolveNode(r.nodeId) || {}).id || '',
       date: r.date || '',
       start: r.start || '',
       end: r.end || '',

@@ -99,3 +99,43 @@ test('group tabs filter the meeting list by the linked node group', () => {
   assert.ok(isgOnly > 0 && isgOnly < 45, 'ISG is a subset, got ' + isgOnly);
   A.tab = 'all';
 });
+
+/* ---------------- data reconciliation with the sheet ---------------- */
+
+test('PRD ids are normalised (no stray spaces from the sheet)', () => {
+  const bad = M.filter(m => !/^PRD-\d+(-[a-z])?$/.test(m.prdId));
+  assert.deepEqual(bad.map(m => m.prdId), []);
+  assert.ok(M.some(m => m.prdId === 'PRD-25'), '"PRD- 25" became PRD-25');
+});
+
+test('non-numeric AI scores ("N/A" or blank) are dropped instead of shown', () => {
+  const bad = M.filter(m => m.aiScore && !/^\d+$/.test(m.aiScore));
+  assert.deepEqual(bad.map(m => m.prdId + '=' + m.aiScore), []);
+  assert.ok(M.some(m => m.aiScore === ''), 'N/A rows have no score chip');
+  assert.ok(M.some(m => m.aiScore === '91'));
+});
+
+test('Close Target is reduced to the latest date of an arrow chain', () => {
+  const bad = M.filter(m => m.closeTarget && !/^\d{4}-\d{2}-\d{2}$/.test(m.closeTarget));
+  assert.deepEqual(bad.map(m => m.prdId + '=' + m.closeTarget), []);
+  const m = M.find(x => x.prdId === 'PRD-13');
+  assert.equal(m.closeTarget, '2026-10-13', '9/30/2026->10/10/2026->10/13/2026 keeps the last one');
+});
+
+test('a missing L4 id falls back to its existing L3 ancestor', () => {
+  const p41 = M.find(m => m.prdId === 'PRD-41');
+  assert.equal(p41.prdNodeId, 'ISG-PLN-DP-9-4', 'raw sheet value kept');
+  assert.equal(A.INDEX.get(p41.nodeRef).nodeId, 'ISG-PLN-DP-9', 'resolved to the L3 parent');
+
+  const p44 = M.find(m => m.prdId === 'PRD-44');
+  assert.equal(A.INDEX.get(p44.nodeRef).nodeId, 'ISG-PLN-FP-1');
+});
+
+test('duplicate sheet ids stay distinct records with their own topics', () => {
+  const a = M.find(m => m.prdId === 'PRD-15');
+  const b = M.find(m => m.prdId === 'PRD-15-b');
+  assert.ok(a && b);
+  assert.notEqual(a.title, b.title);
+  assert.notEqual(a.id, b.id);
+});
+
