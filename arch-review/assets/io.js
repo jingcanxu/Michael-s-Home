@@ -179,30 +179,41 @@ function exportXlsx() {
     .map(m => {
       const n = meetingNode(m);
       return {
+        'PRD ID': m.prdId || '',
         'Date': m.date,
         'Start': m.start,
         'End': m.end,
         'Timezone': m.timezone,
         'Title': m.title,
-        'Status': m.status,
+        'Review Status': m.reviewStatus || '',
+        'Meeting Status': m.status,
         'Level': n ? n.level : '',
-        'PRD Node ID': n ? n.nodeId : '',
-        'PRD Node': n ? n.name : '',
+        'PRD Node ID': n ? n.nodeId : (m.prdNodeId || ''),
+        'PRD Node': n ? n.name : (m.prdModule || ''),
         'PRD Version': n ? n.prdVersion : '',
         'Review Result': n ? n.evaluationResult : '',
-        'Platform': m.platform,
-        'Location': m.location,
-        'Organizer': m.organizer,
+        'Project': m.project || '',
+        'PRD Owner': m.organizer,
+        'AI Score': m.aiScore || '',
         'Attendees': m.attendees,
-        'Agenda': m.agenda
+        'Follow Action': m.agenda,
+        'Action Owner': m.actionOwner || '',
+        'Close Target': m.closeTarget || '',
+        'Action Status': m.actionStatus || '',
+        'Platform': m.platform,
+        'Location': m.location
       };
     });
   const wsMeetings = XLSX.utils.json_to_sheet(meetingRows, {
-    header: ['Date', 'Start', 'End', 'Timezone', 'Title', 'Status', 'Level', 'PRD Node ID', 'PRD Node',
-      'PRD Version', 'Review Result', 'Platform', 'Location', 'Organizer', 'Attendees', 'Agenda']
+    header: ['PRD ID', 'Date', 'Start', 'End', 'Timezone', 'Title', 'Review Status', 'Meeting Status',
+      'Level', 'PRD Node ID', 'PRD Node', 'PRD Version', 'Review Result', 'Project', 'PRD Owner',
+      'AI Score', 'Attendees', 'Follow Action', 'Action Owner', 'Close Target', 'Action Status',
+      'Platform', 'Location']
   });
-  wsMeetings['!cols'] = [{ wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 15 }, { wch: 42 }, { wch: 12 }, { wch: 7 },
-    { wch: 22 }, { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 34 }, { wch: 22 }, { wch: 36 }, { wch: 60 }];
+  wsMeetings['!cols'] = [{ wch: 10 }, { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 15 }, { wch: 42 },
+    { wch: 16 }, { wch: 14 }, { wch: 7 }, { wch: 20 }, { wch: 30 }, { wch: 14 }, { wch: 14 },
+    { wch: 26 }, { wch: 18 }, { wch: 9 }, { wch: 30 }, { wch: 50 }, { wch: 18 }, { wch: 14 },
+    { wch: 13 }, { wch: 10 }, { wch: 30 }];
   XLSX.utils.book_append_sheet(wb, wsMeetings, 'PRD Review Meetings');
   XLSX.writeFile(wb, exportWorkbookFilename('xlsx'));
   toast('Excel workbook exported', '', rows.length + ' nodes · ' + scopeLabel());

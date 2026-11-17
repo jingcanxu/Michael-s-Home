@@ -1,7 +1,7 @@
 /* Architecture Review Console — core data, state, helpers */
 'use strict';
 
-const STORAGE_KEY = 'archReview.workspace.v3';
+const STORAGE_KEY = 'archReview.workspace.v4';
 const LEVELS = ['L1', 'L2', 'L3', 'L4'];
 const LEVEL_RANK = { L1: 1, L2: 2, L3: 3, L4: 4 };
 const REVIEW_STATES = ['Passed', 'Need Revise', 'Reject'];
@@ -94,7 +94,7 @@ const ui = {
   queueLevel: 'all',
   advanced: false,
   focus: null,
-  meetingFilter: 'upcoming',
+  meetingFilter: 'all',
   masterTab: 'all'
 };
 
@@ -188,7 +188,9 @@ function normalizeMeeting(raw) {
   const m = Object.assign({}, raw);
   m.id = m.id || uid();
   ['title', 'nodeRef', 'date', 'start', 'end', 'timezone', 'platform', 'location',
-    'organizer', 'attendees', 'agenda', 'status', 'createdAt', 'updatedAt'].forEach(k => {
+    'organizer', 'attendees', 'agenda', 'status', 'createdAt', 'updatedAt',
+    'prdId', 'prdNodeId', 'prdModule', 'project', 'reviewStatus', 'aiScore',
+    'actionOwner', 'closeTarget', 'actionStatus', 'expectedDate', 'confirmDate'].forEach(k => {
     m[k] = m[k] == null ? '' : String(m[k]);
   });
   m.title = m.title.trim();
@@ -210,6 +212,39 @@ function addDaysISO(dateStr, days) {
 }
 
 function seedMeetings(nodes) {
+  const prdRows = (typeof window !== 'undefined' && window.PRD_REVIEW_DATA && window.PRD_REVIEW_DATA.rows) || null;
+  if (prdRows && prdRows.length) {
+    const byNodeId = new Map();
+    nodes.forEach(n => { if (n.nodeId) byNodeId.set(n.nodeId, n); });
+    return prdRows.map((r, i) => normalizeMeeting({
+      id: 'prd-' + (r.prdId || i),
+      title: r.topic,
+      nodeRef: (byNodeId.get(r.nodeId) || {}).id || '',
+      date: r.date || '',
+      start: r.start || '',
+      end: r.end || '',
+      timezone: 'Asia/Shanghai',
+      platform: 'Teams',
+      location: '',
+      organizer: r.owner || '',
+      attendees: r.attendees || '',
+      agenda: r.followAction || '',
+      status: r.meetingStatus || 'Scheduled',
+      prdId: r.prdId || '',
+      prdNodeId: r.nodeId || '',
+      prdModule: r.l3Name || '',
+      project: r.project || '',
+      reviewStatus: r.reviewStatus || '',
+      aiScore: r.aiScore || '',
+      actionOwner: r.actionOwner || '',
+      closeTarget: r.closeTarget || '',
+      actionStatus: r.actionStatus || '',
+      expectedDate: r.expectedDate || '',
+      confirmDate: r.confirmDate || '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }));
+  }
   const node = name => nodes.find(n => n.name === name) || null;
   const make = (title, name, offset, start, end, platform, status, attendees, agenda) => {
     const n = node(name);
@@ -262,7 +297,7 @@ function defaultState() {
   const seed = deepCopy(window.SEED_DATA || { nodes: [], activity: [] });
   const nodes = seed.nodes.map(normalizeNode);
   return {
-    version: 3,
+    version: 4,
     nodes: nodes,
     activity: (seed.activity || []).map(a => Object.assign({ actor: USER.name }, a)),
     meetings: seedMeetings(nodes),
@@ -316,7 +351,7 @@ function setSaveState(text, isError) {
 function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      version: 3,
+      version: 4,
       nodes: state.nodes,
       activity: state.activity,
       meetings: state.meetings,

@@ -86,7 +86,8 @@ function renderMeetings() {
     '<div class="page-head">' +
       '<div>' +
         '<h1>PRD review meetings</h1>' +
-        '<p>Book review sessions for the L3 modules and L4 functions in the master list. Every appointment stays linked to its PRD, owner and active version.</p>' +
+        '<p>PRD review pipeline from <b>PRD appointment &amp; Checking.xlsx</b> — ' + state.meetings.length +
+          ' requirements with owner, AI score and follow-up actions.</p>' +
       '</div>' +
       '<button class="btn primary" data-action="new-meeting">' + icon('plus') + 'Book a PRD review</button>' +
     '</div>' +
@@ -145,6 +146,24 @@ function meetingGroupsHTML(list) {
   }).join('');
 }
 
+function prdStatusPill(status) {
+  const map = {
+    'close': ['green', 'Close'],
+    'need 2nd review': ['amber', 'Need 2nd Review'],
+    'revise': ['red', 'Revise'],
+    'processing': ['blue', 'Processing']
+  };
+  const hit = map[String(status || '').trim().toLowerCase()];
+  if (!hit) return '';
+  return '<span class="pill ' + hit[0] + '"><i class="dot"></i>' + esc(hit[1]) + '</span>';
+}
+
+function actionStatusPill(status) {
+  const value = String(status || '').trim();
+  if (!value) return '';
+  return '<span class="pill ' + (value.toLowerCase() === 'open' ? 'amber' : 'outline') + '">Action ' + esc(value) + '</span>';
+}
+
 function meetingCardHTML(m) {
   const node = meetingNode(m);
   const info = meetingDateInfo(m.date);
@@ -156,7 +175,16 @@ function meetingCardHTML(m) {
         levelBadge(node.level) + '<span>' + esc(node.name || '(unnamed)') + '</span>' +
         (node.prdVersion ? '<span class="pill outline">' + esc(node.prdVersion) + '</span>' : '') +
       '</button>'
-    : '<span class="meeting-node none">' + icon('layers') + 'No PRD linked</span>';
+    : m.prdNodeId
+      ? '<span class="meeting-node none">' + icon('layers') + esc(m.prdNodeId) +
+        (m.prdModule ? ' · ' + esc(m.prdModule) : '') + '</span>'
+      : '<span class="meeting-node none">' + icon('layers') + 'No PRD linked</span>';
+
+  const chips = [];
+  if (m.project) chips.push('<span class="meeting-chip">' + icon('folder') + esc(m.project) + '</span>');
+  if (m.aiScore) chips.push('<span class="meeting-chip">' + icon('check-circle') + 'AI score ' + esc(m.aiScore) + '</span>');
+  if (m.attendees) chips.push('<span class="meeting-chip">' + icon('users') + esc(m.attendees) + '</span>');
+  if (m.closeTarget) chips.push('<span class="meeting-chip">' + icon('clock') + 'Close by ' + esc(m.closeTarget) + '</span>');
 
   return '<article class="meeting-card' + (m.status === 'Cancelled' ? ' cancelled' : '') + (overdue ? ' overdue' : '') + '">' +
     '<div class="meeting-time">' +
@@ -166,20 +194,25 @@ function meetingCardHTML(m) {
     '</div>' +
     '<div class="meeting-main">' +
       '<div class="meeting-title-row">' +
+        (m.prdId ? '<span class="pill outline">' + esc(m.prdId) + '</span>' : '') +
         '<h3>' + esc(m.title) + '</h3>' +
+        prdStatusPill(m.reviewStatus) +
         meetingStatusPill(m.status) +
+        actionStatusPill(m.actionStatus) +
         (overdue ? '<span class="pill amber">Needs outcome</span>' : '') +
       '</div>' +
       nodeLine +
+      (chips.length ? '<div class="meeting-meta-row">' + chips.join('') + '</div>' : '') +
       '<div class="meeting-meta-row">' +
         '<span class="meeting-chip">' + icon(meetingPlatformIcon(m.platform)) + esc(m.platform) + '</span>' +
-        (m.organizer ? '<span class="meeting-chip">' + avatar(m.organizer) + 'Organizer: ' + esc(m.organizer) + '</span>' : '') +
+        (m.organizer ? '<span class="meeting-chip">' + avatar(m.organizer) + 'Owner: ' + esc(m.organizer) + '</span>' : '') +
+        (m.actionOwner && m.actionOwner !== m.organizer
+          ? '<span class="meeting-chip">' + avatar(m.actionOwner) + 'Action: ' + esc(m.actionOwner) + '</span>' : '') +
         '<span class="meeting-chip">' + icon('clock') + esc(m.timezone) + '</span>' +
         (locationIsLink
           ? '<a class="meeting-chip link" href="' + esc(m.location) + '" target="_blank" rel="noopener">' + icon('external') + 'Meeting link</a>'
           : m.location ? '<span class="meeting-chip">' + icon('location') + esc(m.location) + '</span>' : '') +
       '</div>' +
-      '<div class="meeting-attendee-row">' + attendeeChips(m.attendees) + '</div>' +
       (m.agenda ? '<p class="meeting-agenda">' + esc(m.agenda) + '</p>' : '') +
     '</div>' +
     '<div class="meeting-actions">' +
