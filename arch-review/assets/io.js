@@ -53,6 +53,85 @@ function exportWorkbookFilename(ext) {
   return 'Architecture_Master_' + todayISO() + '.' + ext;
 }
 
+const SUMMARY_HEADERS = [
+  'Group', 'L1 Application', 'Scope Nodes', 'Reviewed',
+  'Passed', 'Need Revise', 'Rejected', 'Pending', 'Coverage %'
+];
+
+function reviewSummaryRows() {
+  const buckets = new Map();
+  state.nodes.filter(canReview).forEach(n => {
+    const group = n.group || '(none)';
+    const l1 = nameAtLevel(n, 'L1') || '(no L1)';
+    const key = group + '\u0000' + l1;
+    if (!buckets.has(key)) {
+      buckets.set(key, {
+        group: group, l1: l1,
+        total: 0, passed: 0, revise: 0, reject: 0, pending: 0
+      });
+    }
+    const b = buckets.get(key);
+    b.total++;
+    const st = reviewStatus(n);
+    if (st === 'Passed') b.passed++;
+    else if (st === 'Need Revise') b.revise++;
+    else if (st === 'Reject') b.reject++;
+    else b.pending++;
+  });
+
+  const rows = [...buckets.values()]
+    .sort((a, b) => a.group.localeCompare(b.group) || a.l1.localeCompare(b.l1))
+    .map(b => {
+      const reviewed = b.passed + b.revise + b.reject;
+      return {
+        'Group': b.group,
+        'L1 Application': b.l1,
+        'Scope Nodes': b.total,
+        'Reviewed': reviewed,
+        'Passed': b.passed,
+        'Need Revise': b.revise,
+        'Rejected': b.reject,
+        'Pending': b.pending,
+        'Coverage %': b.total ? Math.round(reviewed / b.total * 100) : 0
+      };
+    });
+
+  const sum = k => rows.reduce((s, r) => s + r[k], 0);
+  const scope = sum('Scope Nodes');
+  const reviewed = sum('Reviewed');
+  rows.push({
+    'Group': 'TOTAL',
+    'L1 Application': rows.length + ' L1 applications',
+    'Scope Nodes': scope,
+    'Reviewed': reviewed,
+    'Passed': sum('Passed'),
+    'Need Revise': sum('Need Revise'),
+    'Rejected': sum('Rejected'),
+    'Pending': sum('Pending'),
+    'Coverage %': scope ? Math.round(reviewed / scope * 100) : 0
+  });
+  return rows;
+}
+
+function appendSummarySheet(wb) {
+  const rows = reviewSummaryRows();
+  const ws = XLSX.utils.json_to_sheet(rows, { header: SUMMARY_HEADERS });
+  ws['!cols'] = [{ wch: 10 }, { wch: 38 }, { wch: 12 }, { wch: 10 },
+    { wch: 9 }, { wch: 12 }, { wch: 10 }, { wch: 9 }, { wch: 11 }];
+  XLSX.utils.book_append_sheet(wb, ws, 'Review Summary');
+}
+
+function exportSummary() {
+  if (typeof XLSX === 'undefined') {
+    toast('Excel library unavailable', 'error', 'Reload the page and try again.');
+    return;
+  }
+  const wb = XLSX.utils.book_new();
+  appendSummarySheet(wb);
+  XLSX.writeFile(wb, 'Review_Summary_' + todayISO() + '.xlsx');
+  toast('Review summary exported', '', 'Coverage per Group × L1 application');
+}
+
 function exportXlsx() {
   if (typeof XLSX === 'undefined') {
     toast('Excel library unavailable', 'error', 'Reload the page and try again.');
@@ -62,7 +141,8 @@ function exportXlsx() {
   const ws = XLSX.utils.json_to_sheet(rows, { header: EXPORT_HEADERS });
   ws['!cols'] = EXPORT_HEADERS.map(h => ({ wch: Math.max(12, Math.min(46, h.length + 6)) }));
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'ISG L4 Master');
+  appendSummarySheet(wb);
+  XLSX.utils.book_append_sheet(wb, ws, 'Master List');
   const logRows = state.activity.map(a => ({
     'Timestamp': a.ts,
     'Actor': a.actor || USER.name,

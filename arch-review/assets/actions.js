@@ -110,6 +110,7 @@ function handleClick(e) {
       break;
     }
     case 'export-xlsx': exportXlsx(); break;
+    case 'export-summary': exportSummary(); break;
     case 'export-csv': exportCsv(); break;
     case 'export-json': exportJson(); break;
     case 'add-node':
