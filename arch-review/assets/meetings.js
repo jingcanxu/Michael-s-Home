@@ -2,7 +2,9 @@
 
 function upcomingMeetingCount() {
   const today = todayISO();
-  return state.meetings.filter(m => m.status === 'Scheduled' && m.date >= today).length;
+  return state.meetings
+    .filter(meetingInScope)
+    .filter(m => m.status === 'Scheduled' && m.date >= today).length;
 }
 
 function meetingDateTime(m) {
@@ -67,7 +69,7 @@ function attendeeChips(value) {
 function renderMeetings() {
   const today = todayISO();
   const weekEnd = addDaysISO(today, 7);
-  const all = state.meetings.slice();
+  const all = state.meetings.filter(meetingInScope);
   const upcoming = all
     .filter(m => m.status === 'Scheduled' && m.date >= today)
     .sort((a, b) => meetingDateTime(a).localeCompare(meetingDateTime(b)));
@@ -80,6 +82,7 @@ function renderMeetings() {
   const list = filter === 'past' ? other : filter === 'all' ? upcoming.concat(other) : upcoming;
 
   return '<div class="page">' +
+    '<div class="master-tabs-bar">' + masterTabsHTML() + '</div>' +
     '<div class="page-head">' +
       '<div>' +
         '<h1>PRD review meetings</h1>' +

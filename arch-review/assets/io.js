@@ -50,7 +50,8 @@ function exportRow(node) {
 }
 
 function exportWorkbookFilename(ext) {
-  return 'Architecture_Master_' + todayISO() + '.' + ext;
+  const scope = ui.masterTab && ui.masterTab !== 'all' ? ui.masterTab + '_' : '';
+  return 'Architecture_' + scope + 'Master_' + todayISO() + '.' + ext;
 }
 
 const SUMMARY_HEADERS = [
@@ -60,7 +61,7 @@ const SUMMARY_HEADERS = [
 
 function reviewSummaryRows() {
   const buckets = new Map();
-  state.nodes.filter(canReview).forEach(n => {
+  scopeNodes().forEach(n => {
     const group = n.group || '(none)';
     const l1 = nameAtLevel(n, 'L1') || '(no L1)';
     const key = group + '\u0000' + l1;
@@ -128,8 +129,9 @@ function exportSummary() {
   }
   const wb = XLSX.utils.book_new();
   appendSummarySheet(wb);
-  XLSX.writeFile(wb, 'Review_Summary_' + todayISO() + '.xlsx');
-  toast('Review summary exported', '', 'Coverage per Group × L1 application');
+  XLSX.writeFile(wb, 'Review_Summary_' +
+    (ui.masterTab && ui.masterTab !== 'all' ? ui.masterTab + '_' : '') + todayISO() + '.xlsx');
+  toast('Review summary exported', '', scopeLabel() + ' · coverage per L1 application');
 }
 
 function exportXlsx() {
@@ -137,13 +139,13 @@ function exportXlsx() {
     toast('Excel library unavailable', 'error', 'Reload the page and try again.');
     return;
   }
-  const rows = state.nodes.slice().sort(sortByRank).map(exportRow);
+  const rows = state.nodes.filter(inGroupScope).slice().sort(sortByRank).map(exportRow);
   const ws = XLSX.utils.json_to_sheet(rows, { header: EXPORT_HEADERS });
   ws['!cols'] = EXPORT_HEADERS.map(h => ({ wch: Math.max(12, Math.min(46, h.length + 6)) }));
   const wb = XLSX.utils.book_new();
   appendSummarySheet(wb);
   XLSX.utils.book_append_sheet(wb, ws, 'Master List');
-  const logRows = state.activity.map(a => ({
+  const logRows = state.activity.filter(activityInScope).map(a => ({
     'Timestamp': a.ts,
     'Actor': a.actor || USER.name,
     'Action': a.type,
@@ -155,7 +157,7 @@ function exportXlsx() {
   wsLog['!cols'] = [{ wch: 22 }, { wch: 26 }, { wch: 10 }, { wch: 20 }, { wch: 30 }, { wch: 54 }];
   XLSX.utils.book_append_sheet(wb, wsLog, 'Review Activity');
   const histRows = [];
-  state.nodes.slice().sort(sortByRank).forEach(n => (n.history || []).forEach((h, i) => histRows.push({
+  state.nodes.filter(inGroupScope).slice().sort(sortByRank).forEach(n => (n.history || []).forEach((h, i) => histRows.push({
     'Node ID': n.nodeId,
     'Node Name': n.name,
     'Round': i + 1,
@@ -172,7 +174,7 @@ function exportXlsx() {
   });
   wsHist['!cols'] = [{ wch: 20 }, { wch: 30 }, { wch: 7 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 24 }, { wch: 14 }, { wch: 50 }, { wch: 22 }];
   XLSX.utils.book_append_sheet(wb, wsHist, 'Review History');
-  const meetingRows = state.meetings.slice()
+  const meetingRows = state.meetings.filter(meetingInScope).slice()
     .sort((a, b) => meetingDateTime(a).localeCompare(meetingDateTime(b)))
     .map(m => {
       const n = meetingNode(m);
@@ -203,7 +205,7 @@ function exportXlsx() {
     { wch: 22 }, { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 34 }, { wch: 22 }, { wch: 36 }, { wch: 60 }];
   XLSX.utils.book_append_sheet(wb, wsMeetings, 'PRD Review Meetings');
   XLSX.writeFile(wb, exportWorkbookFilename('xlsx'));
-  toast('Excel workbook exported', '', rows.length + ' nodes · ' + state.meetings.length + ' review meetings included');
+  toast('Excel workbook exported', '', rows.length + ' nodes · ' + scopeLabel());
 }
 
 function exportCsv() {

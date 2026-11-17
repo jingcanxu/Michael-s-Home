@@ -54,7 +54,8 @@ function loadCore() {
     'COLUMNS', 'DEFAULT_COLUMNS', 'EXPORT_HEADERS', 'USER', 'STORAGE_KEY',
     'normalizeNode', 'reindex', 'matchesFilters', 'filteredNodes',
     'hasActiveFilters', 'displayRows', 'nameAtLevel', 'childrenOf', 'sortByRank',
-    'reviewStatus', 'effectivePrdLink', 'effectiveFsLink'
+    'reviewStatus', 'effectivePrdLink', 'effectiveFsLink',
+    'scopeNodes', 'inGroupScope', 'reviewStats', 'activityInScope', 'meetingInScope'
   ];
   const exports = {};
   keys.forEach(k => {
@@ -411,4 +412,75 @@ test('effectiveFsLink walks up ancestors when child has none', () => {
   setupState(nodes);
   const leaf = G.INDEX.get('ISG-PLN-DP-1-1');
   assert.equal(G.effectiveFsLink(leaf), 'https://fs/L2');
+});
+
+/* ---------------- group scope across every page ---------------- */
+
+test('scopeNodes narrows to the active group and drops L1/L2', () => {
+  setupState(buildTwoGroupHierarchy());
+  assert.equal(G.scopeNodes().length, 8, '4 ISG + 4 PCG reviewable nodes');
+
+  G.ui.masterTab = 'PCG';
+  const pcg = G.scopeNodes();
+  assert.equal(pcg.length, 4);
+  assert.ok(pcg.every(n => n.group === 'PCG'));
+  assert.ok(pcg.every(n => n.level === 'L3' || n.level === 'L4'));
+});
+
+test('reviewStats follows the active group (Overview, sidebar, queue all read it)', () => {
+  const nodes = buildTwoGroupHierarchy();
+  nodes.find(n => n.nodeId === 'PCG-PLN-OPLN-1-1').evaluationResult = 'Passed';
+  setupState(nodes);
+
+  assert.equal(G.reviewStats().total, 8);
+  assert.equal(G.reviewStats().passed, 1);
+
+  G.ui.masterTab = 'ISG';
+  assert.equal(G.reviewStats().total, 4, 'ISG only');
+  assert.equal(G.reviewStats().passed, 0, 'the passed node belongs to PCG');
+  assert.equal(G.reviewStats().pending, 4);
+
+  G.ui.masterTab = 'PCG';
+  assert.equal(G.reviewStats().total, 4);
+  assert.equal(G.reviewStats().passed, 1);
+});
+
+test('inGroupScope ignores the group when tab is all', () => {
+  setupState(buildTwoGroupHierarchy());
+  const n = G.INDEX.get('PCG-PLN-OPLN-1-1');
+  assert.equal(G.inGroupScope(n), true);
+  G.ui.masterTab = 'PCG';
+  assert.equal(G.inGroupScope(n), true);
+  G.ui.masterTab = 'ISG';
+  assert.equal(G.inGroupScope(n), false);
+});
+
+test('activityInScope keeps only entries whose node belongs to the group', () => {
+  setupState(buildTwoGroupHierarchy());
+  const isgEntry = { nodeId: 'ISG-PLN-DP-1-1', type: 'review' };
+  const pcgEntry = { nodeId: 'PCG-PLN-OPLN-1-1', type: 'review' };
+  const orphan = { nodeId: 'DELETED-NODE', type: 'review' };
+
+  assert.equal(G.activityInScope(isgEntry), true);
+  assert.equal(G.activityInScope(pcgEntry), true);
+
+  G.ui.masterTab = 'ISG';
+  assert.equal(G.activityInScope(isgEntry), true);
+  assert.equal(G.activityInScope(pcgEntry), false);
+  assert.equal(G.activityInScope(orphan), false, 'orphan entries drop out');
+});
+
+test('meetingInScope follows the linked PRD node group', () => {
+  setupState(buildTwoGroupHierarchy());
+  const isgMeeting = { nodeRef: 'ISG-PLN-DP-1-1', title: 'ISG review' };
+  const pcgMeeting = { nodeRef: 'PCG-PLN-OPLN-1-1', title: 'PCG review' };
+  const unlinked = { title: 'Generic' };
+
+  assert.equal(G.meetingInScope(isgMeeting), true);
+  assert.equal(G.meetingInScope(unlinked), true, 'all groups shows unlinked meetings');
+
+  G.ui.masterTab = 'PCG';
+  assert.equal(G.meetingInScope(isgMeeting), false);
+  assert.equal(G.meetingInScope(pcgMeeting), true);
+  assert.equal(G.meetingInScope(unlinked), false, 'unlinked hides inside a group');
 });

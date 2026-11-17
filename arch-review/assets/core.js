@@ -417,11 +417,32 @@ function effectiveFsLink(node) {
 }
 
 function scopeNodes() {
-  return state.nodes.filter(canReview);
+  return state.nodes.filter(n => canReview(n) && inGroupScope(n));
+}
+
+function inGroupScope(n) {
+  return !ui.masterTab || ui.masterTab === 'all' || n.group === ui.masterTab;
+}
+
+function scopeLabel() {
+  return ui.masterTab && ui.masterTab !== 'all' ? ui.masterTab : 'All groups';
+}
+
+function activityInScope(entry) {
+  if (!ui.masterTab || ui.masterTab === 'all') return true;
+  const node = entry.nodeId ? INDEX.get(entry.nodeId) : null;
+  return !!node && node.group === ui.masterTab;
+}
+
+function meetingInScope(m) {
+  if (!ui.masterTab || ui.masterTab === 'all') return true;
+  const node = m.nodeRef ? INDEX.get(m.nodeRef) : null;
+  return !!node && node.group === ui.masterTab;
 }
 
 function focusQueueIds() {
   return state.nodes.filter(canReview)
+    .filter(inGroupScope)
     .filter(n => ui.queueLevel === 'all' || n.level === ui.queueLevel)
     .filter(n => reviewStatus(n) === 'Pending' || reviewStatus(n) === 'Need Revise')
     .sort(queueSort)

@@ -38,7 +38,7 @@ function renderShell() {
   const coverage = document.getElementById('sidebar-coverage');
   const coverageBar = document.getElementById('sidebar-coverage-bar');
   const coverageText = document.getElementById('sidebar-coverage-text');
-  if (masterCount) masterCount.textContent = state.nodes.length;
+  if (masterCount) masterCount.textContent = state.nodes.filter(inGroupScope).length;
   if (reviewCount) reviewCount.textContent = stats.pending;
   if (meetingCount) meetingCount.textContent = upcomingMeetingCount();
   if (coverage) coverage.textContent = stats.coverage + '%';
@@ -118,8 +118,9 @@ function uniqueNames(level) {
 /* ---------------- Overview ---------------- */
 function renderOverview() {
   const stats = reviewStats();
-  const l1Count = state.nodes.filter(n => n.level === 'L1').length;
-  const l2Count = state.nodes.filter(n => n.level === 'L2').length;
+  const scoped = state.nodes.filter(inGroupScope);
+  const l1Count = scoped.filter(n => n.level === 'L1').length;
+  const l2Count = scoped.filter(n => n.level === 'L2').length;
   const statusParts = [
     { label: 'Passed', value: stats.passed, color: '#12b76a' },
     { label: 'Need Revise', value: stats.revise, color: '#e0a21b' },
@@ -140,12 +141,13 @@ function renderOverview() {
     : '#eef1f5';
 
   return '<div class="page">' +
+    '<div class="master-tabs-bar">' + masterTabsHTML() + '</div>' +
     '<div class="page-head">' +
       '<div>' +
         '<h1>Architecture review at a glance</h1>' +
         '<p>Review coverage and evaluation results for the L3 modules and L4 functions in the master list.</p>' +
       '</div>' +
-      '<span class="cycle-chip"><i class="dot"></i>Data as of ' + esc(fmtDate(todayISO())) + '</span>' +
+      '<span class="cycle-chip"><i class="dot"></i>' + esc(scopeLabel()) + ' · data as of ' + esc(fmtDate(todayISO())) + '</span>' +
     '</div>' +
 
     '<div class="kpi-grid">' +
@@ -190,7 +192,7 @@ function renderOverview() {
       '<section class="panel">' +
         '<div class="panel-head"><div><h2>Recent activity</h2><p>Latest evaluation and data changes</p></div>' +
           '<button class="btn xs ghost" data-action="navigate" data-view="master">Open master list</button></div>' +
-        '<div class="panel-body" style="padding-top:0">' + activityList(state.activity.slice(0, 7)) + '</div>' +
+        '<div class="panel-body" style="padding-top:0">' + activityList(state.activity.filter(activityInScope).slice(0, 7)) + '</div>' +
       '</section>' +
     '</div>' +
   '</div>';
@@ -273,6 +275,7 @@ function renderQueue() {
   if (ui.focus) return renderFocus();
   const stats = reviewStats();
   const scope = state.nodes.filter(canReview)
+    .filter(inGroupScope)
     .filter(n => ui.queueLevel === 'all' || n.level === ui.queueLevel);
   const remaining = scope.filter(n => reviewStatus(n) === 'Pending' || reviewStatus(n) === 'Need Revise').length;
   const columns = [
@@ -281,8 +284,9 @@ function renderQueue() {
     { key: 'Passed', label: 'Passed', cls: 'passed', iconName: 'check-circle' },
     { key: 'Reject', label: 'Rejected', cls: 'rejected', iconName: 'close' }
   ];
-  const levelCount = lvl => state.nodes.filter(n => canReview(n) && n.level === lvl).length;
+  const levelCount = lvl => state.nodes.filter(n => canReview(n) && inGroupScope(n) && n.level === lvl).length;
   return '<div class="page">' +
+    '<div class="master-tabs-bar">' + masterTabsHTML() + '</div>' +
     '<div class="board-topbar">' +
       '<div class="segmented">' +
         '<button class="' + (ui.queueLevel === 'all' ? 'active' : '') + '" data-action="queue-level" data-level="all">All L3/L4</button>' +
