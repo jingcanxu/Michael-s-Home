@@ -3,7 +3,8 @@
 const VIEW_META = {
   overview: { title: 'Overview', subtitle: 'Architecture review governance' },
   master: { title: 'Master List', subtitle: 'L1 → L4 architecture inventory' },
-  review: { title: 'L3 / L4 Review', subtitle: 'Evaluate functions and modules' }
+  review: { title: 'L3 / L4 Review', subtitle: 'Evaluate functions and modules' },
+  meetings: { title: 'PRD Review Meetings', subtitle: 'Book and track PRD review sessions' }
 };
 
 function render() {
@@ -12,6 +13,7 @@ function render() {
   if (!view) return;
   if (ui.view === 'overview') view.innerHTML = renderOverview();
   else if (ui.view === 'review') view.innerHTML = renderQueue();
+  else if (ui.view === 'meetings') view.innerHTML = renderMeetings();
   else view.innerHTML = renderMaster();
   syncSearchInput();
   updateResultCount();
@@ -32,11 +34,13 @@ function renderShell() {
   const stats = reviewStats();
   const masterCount = document.getElementById('nav-master-count');
   const reviewCount = document.getElementById('nav-review-count');
+  const meetingCount = document.getElementById('nav-meetings-count');
   const coverage = document.getElementById('sidebar-coverage');
   const coverageBar = document.getElementById('sidebar-coverage-bar');
   const coverageText = document.getElementById('sidebar-coverage-text');
   if (masterCount) masterCount.textContent = state.nodes.length;
   if (reviewCount) reviewCount.textContent = stats.pending;
+  if (meetingCount) meetingCount.textContent = upcomingMeetingCount();
   if (coverage) coverage.textContent = stats.coverage + '%';
   if (coverageBar) coverageBar.style.width = stats.coverage + '%';
   if (coverageText) coverageText.textContent = stats.reviewed + ' of ' + stats.total + ' L3/L4 nodes reviewed';

@@ -16,6 +16,13 @@ const OPTIONS = {
   experienceLevel: ['High', 'Mid', 'Low', '—']
 };
 
+const MEETING = {
+  platforms: ['Teams', 'Zoom', 'Feishu', 'On-site', 'Other'],
+  statuses: ['Scheduled', 'Completed', 'Cancelled'],
+  timezones: ['Asia/Shanghai', 'Asia/Singapore', 'Asia/Tokyo', 'Europe/London', 'Europe/Berlin', 'America/New_York', 'America/Los_Angeles', 'UTC'],
+  filter: ['upcoming', 'past', 'all']
+};
+
 const GROUP_META = {
   identification: 'IDENTIFICATION',
   governance: 'GOVERNANCE',
@@ -85,7 +92,8 @@ const ui = {
   sort: { key: null, dir: 'asc' },
   queueLevel: 'all',
   advanced: false,
-  focus: null
+  focus: null,
+  meetingFilter: 'upcoming'
 };
 
 let state = null;
@@ -170,6 +178,66 @@ function normalizeNode(raw) {
   return n;
 }
 
+function normalizeMeeting(raw) {
+  const m = Object.assign({}, raw);
+  m.id = m.id || uid();
+  ['title', 'nodeRef', 'date', 'start', 'end', 'timezone', 'platform', 'location',
+    'organizer', 'attendees', 'agenda', 'status', 'createdAt', 'updatedAt'].forEach(k => {
+    m[k] = m[k] == null ? '' : String(m[k]);
+  });
+  m.title = m.title.trim();
+  m.date = /^\d{4}-\d{2}-\d{2}$/.test(m.date) ? m.date : '';
+  m.start = /^\d{2}:\d{2}$/.test(m.start) ? m.start : '';
+  m.end = /^\d{2}:\d{2}$/.test(m.end) ? m.end : '';
+  if (!MEETING.timezones.includes(m.timezone)) m.timezone = 'Asia/Shanghai';
+  if (!MEETING.platforms.includes(m.platform)) m.platform = 'Teams';
+  if (!MEETING.statuses.includes(m.status)) m.status = 'Scheduled';
+  return m;
+}
+
+function addDaysISO(dateStr, days) {
+  const d = new Date(String(dateStr) + 'T00:00:00');
+  if (isNaN(d.getTime())) return dateStr;
+  d.setDate(d.getDate() + days);
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+function seedMeetings(nodes) {
+  const node = name => nodes.find(n => n.name === name) || null;
+  const make = (title, name, offset, start, end, platform, status, attendees, agenda) => {
+    const n = node(name);
+    return {
+      id: 'm' + Math.random().toString(36).slice(2, 9),
+      title: title,
+      nodeRef: n ? n.id : '',
+      date: addDaysISO(todayISO(), offset),
+      start: start,
+      end: end,
+      timezone: 'Asia/Shanghai',
+      platform: platform,
+      location: platform === 'On-site' ? 'HQ · 12F-03' : 'https://meetings.example.com/' + Math.random().toString(36).slice(2, 8),
+      organizer: USER.name,
+      attendees: attendees,
+      agenda: agenda,
+      status: status,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  };
+  return [
+    make('PRD review — Forecast hierarchy release', 'Manage Forecast Hierarchy', 1, '09:30', '10:30',
+      'Teams', 'Scheduled', 'Demand Planning DT, ISG Architecture, Data Platform',
+      'Walk through the v1.2 PRD changes, confirm the L4 function scope and agree on the open questions before sign-off.'),
+    make('PRD review — Product hierarchy alignment', 'Manage Product Hierarchy', 3, '14:00', '15:00',
+      'Feishu', 'Scheduled', 'Product Master DT, ISG Architecture',
+      'Align on the shared product hierarchy changes and confirm dependencies with the planning workstream.'),
+    make('PRD sign-off — Geo hierarchy', 'Manage Geo Hierarchy', -4, '10:00', '11:00',
+      'On-site', 'Completed', 'Demand Planning DT, ISG Architecture',
+      'Final walkthrough completed; sign-off recorded in the master list.')
+  ].map(normalizeMeeting);
+}
+
 function pushReviewHistory(node, note) {
   if (!REVIEW_STATES.includes(node.evaluationResult)) return;
   if (!Array.isArray(node.history)) node.history = [];
@@ -186,10 +254,12 @@ function pushReviewHistory(node, note) {
 
 function defaultState() {
   const seed = deepCopy(window.SEED_DATA || { nodes: [], activity: [] });
+  const nodes = seed.nodes.map(normalizeNode);
   return {
-    version: 2,
-    nodes: seed.nodes.map(normalizeNode),
+    version: 3,
+    nodes: nodes,
     activity: (seed.activity || []).map(a => Object.assign({ actor: USER.name }, a)),
+    meetings: seedMeetings(nodes),
     settings: {
       visibleColumns: DEFAULT_COLUMNS.slice(),
       collapsed: []
@@ -219,6 +289,10 @@ function loadState() {
       parsed.version = 2;
     }
     parsed.settings.collapsed = Array.isArray(parsed.settings.collapsed) ? parsed.settings.collapsed : [];
+    parsed.meetings = Array.isArray(parsed.meetings)
+      ? parsed.meetings.map(normalizeMeeting).filter(m => m.title)
+      : seedMeetings(parsed.nodes);
+    parsed.version = 3;
     return parsed;
   } catch (err) {
     return null;
@@ -235,9 +309,10 @@ function setSaveState(text, isError) {
 function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      version: 1,
+      version: 3,
       nodes: state.nodes,
       activity: state.activity,
+      meetings: state.meetings,
       settings: state.settings
     }));
     const t = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

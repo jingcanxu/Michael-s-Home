@@ -501,6 +501,10 @@ function renderModal() {
     return;
   }
   document.body.classList.add('no-scroll');
+  if (modalState.type === 'meeting') {
+    root.innerHTML = renderMeetingModal();
+    return;
+  }
   if (modalState.type === 'confirm') {
     root.innerHTML = '<div class="modal-overlay" data-action="close-modal">' +
       '<div class="modal" role="dialog" aria-modal="true" data-stop-modal="1">' +

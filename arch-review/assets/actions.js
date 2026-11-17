@@ -211,6 +211,28 @@ function handleClick(e) {
     case 'create-node':
       createNode();
       break;
+    case 'new-meeting':
+      openMeetingModal(null, { nodeRef: actionEl.dataset.nodeRef || '' });
+      break;
+    case 'edit-meeting':
+      openMeetingModal(actionEl.dataset.id);
+      break;
+    case 'save-meeting':
+      saveMeeting();
+      break;
+    case 'delete-meeting':
+      requestDeleteMeeting(actionEl.dataset.id);
+      break;
+    case 'meeting-status':
+      setMeetingStatus(actionEl.dataset.id, actionEl.dataset.status);
+      break;
+    case 'meeting-filter':
+      ui.meetingFilter = MEETING.filter.includes(actionEl.dataset.filter) ? actionEl.dataset.filter : 'upcoming';
+      render();
+      break;
+    case 'meeting-open-node':
+      openDrawer(actionEl.dataset.id);
+      break;
     default:
       break;
   }
@@ -273,6 +295,16 @@ function handleChange(e) {
   if (el.id === 'add-parent') {
     modalState.parentId = el.value || null;
     updateAddAutoFields();
+    return;
+  }
+  if (el.matches('[data-meeting-field="nodeRef"]')) {
+    const hint = document.querySelector('.meeting-modal-hint .helper');
+    const node = INDEX.get(el.value);
+    if (hint) {
+      hint.textContent = node
+        ? 'Linked PRD: ' + (node.name || '') + (node.prdVersion ? ' · ' + node.prdVersion : '')
+        : 'Tip: link a PRD to surface its active version in the schedule.';
+    }
     return;
   }
   if (el.matches('[data-field]')) {

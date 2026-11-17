@@ -91,8 +91,38 @@ function exportXlsx() {
   });
   wsHist['!cols'] = [{ wch: 20 }, { wch: 30 }, { wch: 7 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 24 }, { wch: 14 }, { wch: 50 }, { wch: 22 }];
   XLSX.utils.book_append_sheet(wb, wsHist, 'Review History');
+  const meetingRows = state.meetings.slice()
+    .sort((a, b) => meetingDateTime(a).localeCompare(meetingDateTime(b)))
+    .map(m => {
+      const n = meetingNode(m);
+      return {
+        'Date': m.date,
+        'Start': m.start,
+        'End': m.end,
+        'Timezone': m.timezone,
+        'Title': m.title,
+        'Status': m.status,
+        'Level': n ? n.level : '',
+        'PRD Node ID': n ? n.nodeId : '',
+        'PRD Node': n ? n.name : '',
+        'PRD Version': n ? n.prdVersion : '',
+        'Review Result': n ? n.evaluationResult : '',
+        'Platform': m.platform,
+        'Location': m.location,
+        'Organizer': m.organizer,
+        'Attendees': m.attendees,
+        'Agenda': m.agenda
+      };
+    });
+  const wsMeetings = XLSX.utils.json_to_sheet(meetingRows, {
+    header: ['Date', 'Start', 'End', 'Timezone', 'Title', 'Status', 'Level', 'PRD Node ID', 'PRD Node',
+      'PRD Version', 'Review Result', 'Platform', 'Location', 'Organizer', 'Attendees', 'Agenda']
+  });
+  wsMeetings['!cols'] = [{ wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 15 }, { wch: 42 }, { wch: 12 }, { wch: 7 },
+    { wch: 22 }, { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 34 }, { wch: 22 }, { wch: 36 }, { wch: 60 }];
+  XLSX.utils.book_append_sheet(wb, wsMeetings, 'PRD Review Meetings');
   XLSX.writeFile(wb, exportWorkbookFilename('xlsx'));
-  toast('Excel workbook exported', '', rows.length + ' nodes · review activity included');
+  toast('Excel workbook exported', '', rows.length + ' nodes · ' + state.meetings.length + ' review meetings included');
 }
 
 function exportCsv() {
@@ -109,13 +139,15 @@ function exportCsv() {
 
 function exportJson() {
   const payload = {
-    version: 2,
+    version: 3,
     exportedAt: new Date().toISOString(),
     nodes: state.nodes,
-    activity: state.activity
+    activity: state.activity,
+    meetings: state.meetings,
+    settings: state.settings
   };
   downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), exportWorkbookFilename('json'));
-  toast('Workspace backup exported', '', state.nodes.length + ' nodes · JSON');
+  toast('Workspace backup exported', '', state.nodes.length + ' nodes · ' + state.meetings.length + ' meetings · JSON');
 }
 
 /* ---------------- Import ---------------- */
@@ -131,7 +163,8 @@ function handleImportFile(file) {
         const rawNodes = Array.isArray(parsed) ? parsed : parsed.nodes;
         if (!Array.isArray(rawNodes) || !rawNodes.length) throw new Error('No nodes found');
         const nodes = finalizeImportedNodes(rawNodes.map(normalizeNode));
-        promptImport(nodes, name);
+        const meetings = Array.isArray(parsed.meetings) ? parsed.meetings.map(normalizeMeeting).filter(m => m.title) : null;
+        promptImport(nodes, name, meetings);
       } catch (err) {
         toast('Could not read JSON', 'error', err.message);
       }
@@ -146,7 +179,8 @@ function handleImportFile(file) {
       const wb = XLSX.read(reader.result, { type: 'array', cellDates: true });
       const nodes = parseWorkbook(wb);
       if (!nodes.length) throw new Error('No L1–L4 rows were found. Check that the sheet has a "Node ID" column.');
-      promptImport(nodes, name);
+      const meetings = parseMeetingsSheet(wb, nodes);
+      promptImport(nodes, name, meetings);
     } catch (err) {
       toast('Could not import file', 'error', err.message);
     }
@@ -154,25 +188,28 @@ function handleImportFile(file) {
   reader.readAsArrayBuffer(file);
 }
 
-function promptImport(nodes, filename) {
+function promptImport(nodes, filename, meetings) {
   openConfirm({
     title: 'Replace workspace with imported data?',
     message: 'This will replace the current ' + state.nodes.length + ' nodes with ' + nodes.length +
       ' nodes from "' + filename + '". Export a backup first if you need to keep the current workspace.',
     confirmLabel: 'Import ' + nodes.length + ' nodes',
-    onConfirm: () => applyImport(nodes, filename)
+    onConfirm: () => applyImport(nodes, filename, meetings)
   });
 }
 
-function applyImport(nodes, filename) {
+function applyImport(nodes, filename, meetings) {
   const visible = state.settings.visibleColumns;
+  const previousMeetings = Array.isArray(state.meetings) ? state.meetings.slice() : [];
   state = {
-    version: 2,
+    version: 3,
     nodes: nodes,
     activity: [],
+    meetings: Array.isArray(meetings) ? meetings : previousMeetings,
     settings: { visibleColumns: visible.length ? visible : DEFAULT_COLUMNS.slice(), collapsed: [] }
   };
   reindex();
+  state.meetings = state.meetings.filter(m => !m.nodeRef || INDEX.has(m.nodeRef));
   selection.clear();
   logActivity('import', { nodeId: '—', name: filename }, 'Imported ' + nodes.length + ' nodes from ' + filename);
   saveState();
@@ -429,4 +466,48 @@ function finalizeImportedNodes(nodes) {
     }
   });
   return nodes;
+}
+
+function meetingCell(value) {
+  if (value == null) return '';
+  if (value instanceof Date) {
+    const p = n => String(n).padStart(2, '0');
+    return value.getFullYear() + '-' + p(value.getMonth() + 1) + '-' + p(value.getDate());
+  }
+  return String(value).trim();
+}
+
+function meetingTimeCell(value) {
+  if (typeof value !== 'number' || !isFinite(value)) return meetingCell(value);
+  const mins = Math.round((value % 1) * 24 * 60);
+  return String(Math.floor(mins / 60)).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0');
+}
+
+function parseMeetingsSheet(wb, nodes) {
+  const sheetName = (wb.SheetNames || []).find(n => /prd\s*review\s*meetings/i.test(n));
+  if (!sheetName) return null;
+  let rows;
+  try {
+    rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
+  } catch (err) {
+    return null;
+  }
+  const byCode = new Map(nodes.map(n => [n.nodeId, n.id]));
+  return rows.map(row => {
+    const code = meetingCell(row['PRD Node ID']);
+    return normalizeMeeting({
+      title: meetingCell(row['Title']),
+      nodeRef: code && byCode.has(code) ? byCode.get(code) : '',
+      date: meetingCell(row['Date']),
+      start: meetingTimeCell(row['Start']),
+      end: meetingTimeCell(row['End']),
+      timezone: meetingCell(row['Timezone']),
+      platform: meetingCell(row['Platform']),
+      location: meetingCell(row['Location']),
+      organizer: meetingCell(row['Organizer']),
+      attendees: meetingCell(row['Attendees']),
+      agenda: meetingCell(row['Agenda']),
+      status: meetingCell(row['Status'])
+    });
+  }).filter(m => m.title);
 }
