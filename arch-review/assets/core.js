@@ -31,7 +31,6 @@ const GROUP_META = {
 };
 
 const COLUMNS = [
-  { key: 'rankId', label: 'RankID', group: 'identification', width: 102 },
   { key: 'level', label: 'Level', group: 'identification', width: 92 },
   { key: 'l1', label: 'L1 Application', group: 'identification', width: 104 },
   { key: 'l2', label: 'L2 Application', group: 'identification', width: 132 },
@@ -65,7 +64,7 @@ const COLUMNS = [
 ];
 
 const DEFAULT_COLUMNS = [
-  'rankId', 'level', 'l1', 'l2', 'l3', 'l4', 'prdVersion', 'description',
+  'level', 'l1', 'l2', 'l3', 'l4', 'prdVersion', 'description',
   'dtOwner', 'status', 'priority', 'lockStatus', 'evaluationResult',
   'aiScore', 'reviewDate'
 ];
@@ -279,6 +278,7 @@ function loadState() {
     parsed.settings.visibleColumns = Array.isArray(parsed.settings.visibleColumns) && parsed.settings.visibleColumns.length
       ? parsed.settings.visibleColumns.filter(k => COLUMNS.some(c => c.key === k))
       : DEFAULT_COLUMNS.slice();
+    if (!parsed.settings.visibleColumns.length) parsed.settings.visibleColumns = DEFAULT_COLUMNS.slice();
     if (!parsed.version || parsed.version < 2) {
       if (!parsed.settings.visibleColumns.includes('prdVersion')) {
         const cols = parsed.settings.visibleColumns.slice();
