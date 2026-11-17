@@ -1,7 +1,7 @@
 /* Architecture Review Console — core data, state, helpers */
 'use strict';
 
-const STORAGE_KEY = 'archReview.workspace.v1';
+const STORAGE_KEY = 'archReview.workspace.v2';
 const LEVELS = ['L1', 'L2', 'L3', 'L4'];
 const LEVEL_RANK = { L1: 1, L2: 2, L3: 3, L4: 4 };
 const REVIEW_STATES = ['Passed', 'Need Revise', 'Reject'];
