@@ -1,7 +1,7 @@
 /* Architecture Review Console — core data, state, helpers */
 'use strict';
 
-const STORAGE_KEY = 'archReview.workspace.v2';
+const STORAGE_KEY = 'archReview.workspace.v3';
 const LEVELS = ['L1', 'L2', 'L3', 'L4'];
 const LEVEL_RANK = { L1: 1, L2: 2, L3: 3, L4: 4 };
 const REVIEW_STATES = ['Passed', 'Need Revise', 'Reject'];
@@ -45,7 +45,7 @@ const COLUMNS = [
   { key: 'shadowOwner', label: 'Shadow Owner', group: 'identification', width: 108 },
   { key: 'experienceLevel', label: 'Experience Level', group: 'identification', width: 94 },
   { key: 'techStack', label: 'Tech Stack', group: 'identification', width: 108 },
-  { key: 'prdLink', label: 'PRD Link (L3)', group: 'identification', width: 180 },
+  { key: 'prdLink', label: 'PRD Link', group: 'identification', width: 180 },
   { key: 'prdVersion', label: 'PRD Version (Active)', group: 'identification', width: 118 },
   { key: 'changeProject', label: 'Change Project', group: 'identification', width: 150 },
   { key: 'itOwner', label: 'IT Owner', group: 'identification', width: 104 },
@@ -66,7 +66,7 @@ const COLUMNS = [
 ];
 
 const DEFAULT_COLUMNS = [
-  'level', 'l1', 'l2', 'l3', 'l4', 'prdVersion', 'description',
+  'level', 'l1', 'l2', 'l3', 'l4', 'prdVersion', 'prdLink', 'description',
   'dtOwner', 'status', 'priority', 'lockStatus', 'evaluationResult',
   'aiScore', 'reviewDate'
 ];
@@ -75,7 +75,7 @@ const EXPORT_HEADERS = [
   'RankID', 'Node ID', 'Group', 'Level', 'L1 Application', 'L2 Application',
   'L3 Feature/module', 'L4 Function Name', 'Description', 'CFC Related',
   'Owner Biz Team', 'DT Owner', 'Shadow Owner', 'Experience Level', 'Tech Stack',
-  'PRD Link (L3)', 'PRD Version (Active)', 'Change Project', 'IT Owner', 'FS Link(L4)', 'Status', 'Change Type', 'Priority',
+  'PRD Link', 'PRD Version (Active)', 'Change Project', 'IT Owner', 'FS Link(L4)', 'Status', 'Change Type', 'Priority',
   'Shared Across (Projects)', 'Lock Status', 'Evaluation Results',
   'AI Self Evaluation Score', 'Reviewer', 'Created', 'Last Modified', 'Review Date',
   'Notes', 'Source'
@@ -390,6 +390,30 @@ function reviewStatus(n) {
 
 function canReview(n) {
   return n.level === 'L3' || n.level === 'L4';
+}
+
+function effectivePrdLink(node) {
+  let cur = node;
+  const seen = new Set();
+  while (cur && !seen.has(cur.id)) {
+    seen.add(cur.id);
+    if (cur.prdLink && String(cur.prdLink).trim()) return cur.prdLink;
+    // PRD lives at L3; don't look above L3 even if they somehow have one
+    if (cur.level === 'L3') break;
+    cur = cur.parentId ? INDEX.get(cur.parentId) : null;
+  }
+  return '';
+}
+
+function effectiveFsLink(node) {
+  let cur = node;
+  const seen = new Set();
+  while (cur && !seen.has(cur.id)) {
+    seen.add(cur.id);
+    if (cur.fsLink && String(cur.fsLink).trim()) return cur.fsLink;
+    cur = cur.parentId ? INDEX.get(cur.parentId) : null;
+  }
+  return '';
 }
 
 function scopeNodes() {

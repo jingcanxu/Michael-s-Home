@@ -54,7 +54,7 @@ function loadCore() {
     'COLUMNS', 'DEFAULT_COLUMNS', 'EXPORT_HEADERS', 'USER', 'STORAGE_KEY',
     'normalizeNode', 'reindex', 'matchesFilters', 'filteredNodes',
     'hasActiveFilters', 'displayRows', 'nameAtLevel', 'childrenOf', 'sortByRank',
-    'reviewStatus'
+    'reviewStatus', 'effectivePrdLink', 'effectiveFsLink'
   ];
   const exports = {};
   keys.forEach(k => {
@@ -369,4 +369,46 @@ test('nameAtLevel works across a truncated ISG branch', () => {
   assert.equal(G.nameAtLevel(leaf, 'L2'), 'ISG Demand Planning');
   assert.equal(G.nameAtLevel(leaf, 'L3'), 'ISG Forecast Hierarchy');
   assert.equal(G.nameAtLevel(leaf, 'L4'), 'ISG Geo');
+});
+
+test('effectivePrdLink returns own value when present', () => {
+  const nodes = buildTwoGroupHierarchy();
+  // add PRD directly on L3
+  nodes.find(n => n.nodeId === 'ISG-PLN-DP-1').prdLink = 'https://prd/L3';
+  setupState(nodes);
+  const l3 = G.INDEX.get('ISG-PLN-DP-1');
+  assert.equal(G.effectivePrdLink(l3), 'https://prd/L3');
+});
+
+test('effectivePrdLink falls back to parent L3 of the same group', () => {
+  const nodes = buildTwoGroupHierarchy();
+  nodes.find(n => n.nodeId === 'ISG-PLN-DP-1').prdLink = 'https://prd/L3-hierarchy';
+  setupState(nodes);
+  const leaf = G.INDEX.get('ISG-PLN-DP-1-1'); // ISG Geo, has no prdLink itself
+  assert.equal(G.effectivePrdLink(leaf), 'https://prd/L3-hierarchy', 'L4 inherits L3 prdLink');
+});
+
+test('effectivePrdLink returns empty when no ancestor L3 has it', () => {
+  const nodes = buildTwoGroupHierarchy();
+  setupState(nodes);
+  // ISG root L1 and L2 have no prdLink, nor L4 leaf
+  const leaf = G.INDEX.get('ISG-PLN-DP-1-1');
+  assert.equal(G.effectivePrdLink(leaf), '');
+});
+
+test('effectivePrdLink prefers own PRD even when ancestor L3 also has one', () => {
+  const nodes = buildTwoGroupHierarchy();
+  nodes.find(n => n.nodeId === 'ISG-PLN-DP-1').prdLink = 'https://prd/L3';
+  nodes.find(n => n.nodeId === 'ISG-PLN-DP-1-1').prdLink = 'https://prd/L4-override';
+  setupState(nodes);
+  const leaf = G.INDEX.get('ISG-PLN-DP-1-1');
+  assert.equal(G.effectivePrdLink(leaf), 'https://prd/L4-override');
+});
+
+test('effectiveFsLink walks up ancestors when child has none', () => {
+  const nodes = buildTwoGroupHierarchy();
+  nodes.find(n => n.nodeId === 'ISG-PLN-DP').fsLink = 'https://fs/L2';
+  setupState(nodes);
+  const leaf = G.INDEX.get('ISG-PLN-DP-1-1');
+  assert.equal(G.effectiveFsLink(leaf), 'https://fs/L2');
 });

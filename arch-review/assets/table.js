@@ -190,8 +190,9 @@ function renderCell(col, node, depth) {
     case 'changeProject':
       return '<td><span class="cell-clip" title="' + esc(node.changeProject) + '">' + (node.changeProject ? esc(node.changeProject) : '<span class="cell-empty">—</span>') + '</span></td>';
     case 'prdLink':
+      return '<td>' + linkCell(effectivePrdLink(node)) + '</td>';
     case 'fsLink':
-      return '<td>' + linkCell(node[col.key]) + '</td>';
+      return '<td>' + linkCell(effectiveFsLink(node)) + '</td>';
     case 'status':
       return '<td>' + statusCell(node.status) + '</td>';
     case 'changeType':
@@ -359,7 +360,23 @@ function drawerDetailsHTML(node) {
         fieldHTML('Experience Level', 'experienceLevel', draft.experienceLevel, { list: 'experience-options', placeholder: 'High / Mid / Low' }) +
         fieldHTML('IT Owner', 'itOwner', draft.itOwner, { placeholder: 'IT owner' }) +
         fieldHTML('Tech Stack', 'techStack', draft.techStack, { placeholder: 'Technology stack' }) +
-        fieldHTML('PRD Link (L3)', 'prdLink', draft.prdLink, { full: true, placeholder: 'PRD link or document title' }) +
+        fieldHTML('PRD Link', 'prdLink', draft.prdLink || effectivePrdLink(node), {
+          full: true,
+          placeholder: 'PRD link or document title',
+          helper: (function () {
+            const own = draft.prdLink;
+            const eff = effectivePrdLink(node);
+            if (own || !eff) return '';
+            let cur = node.parentId ? INDEX.get(node.parentId) : null;
+            while (cur) {
+              if (cur.level === 'L3' && effectivePrdLink(cur) === eff) {
+                return 'Inherited from L3 "' + cur.name + '" — edit directly on that L3 module to change it, or override here for this node.';
+              }
+              cur = cur.parentId ? INDEX.get(cur.parentId) : null;
+            }
+            return 'Inherited from an ancestor L3 module — edit directly on that L3 to change it, or override here for this node.';
+          })()
+        }) +
         fieldHTML('FS Link (L4)', 'fsLink', draft.fsLink, { full: true, placeholder: 'Functional spec link or title' }) +
       '</div>' +
       '<datalist id="experience-options"><option value="High"></option><option value="Mid"></option><option value="Low"></option></datalist>' +
