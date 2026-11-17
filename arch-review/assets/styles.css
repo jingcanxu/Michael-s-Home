@@ -474,6 +474,26 @@ h1, h2, h3, h4, p { margin: 0; }
 .master-table .cell-dim { color: var(--muted); }
 .master-table .cell-empty { color: var(--muted-2); }
 
+.master-table .link-out,
+.master-table .link-copy {
+  color: var(--navy-3, #1c4b7a);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--navy-3, #1c4b7a) 50%, transparent);
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: color .12s ease, text-decoration-color .12s ease;
+}
+.master-table .link-out:hover,
+.master-table .link-copy:hover {
+  color: var(--navy-2, #123a63);
+  text-decoration-color: var(--navy-2, #123a63);
+}
+.master-table .link-out::after {
+  content: ' ↗';
+  font-size: .8em;
+  opacity: .7;
+}
+
 .master-table .sel-col { width: 40px; padding-left: 14px; }
 .master-table .sel-col input { width: 14px; height: 14px; accent-color: var(--navy); display: block; cursor: pointer; }
 .master-table .actions-col {

@@ -50,8 +50,34 @@ function bindEvents() {
 function handleClick(e) {
   if (e.target.classList.contains('modal-overlay')) { closeModal(); return; }
   if (e.target.classList.contains('drawer-overlay')) { requestCloseDrawer(); return; }
-  if (e.target.closest('a')) { closeMenus(); return; }
   if (e.target.closest('input, select, textarea, label')) { return; }
+
+  // clickable copy-in-place links (e.g. PRD Link text that is not a URL)
+  // — must come before the generic <a> early return below
+  const copyLink = e.target.closest('.link-copy');
+  if (copyLink) {
+    e.preventDefault();
+    closeMenus();
+    const text = copyLink.dataset.copy || copyLink.textContent.trim();
+    const copy = async () => {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = text; document.body.appendChild(ta);
+          ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+        }
+        toast('PRD title copied', '', text);
+      } catch (err) {
+        toast('Copy failed', 'warn', 'Please copy manually: ' + text);
+      }
+    };
+    copy();
+    return;
+  }
+
+  if (e.target.closest('a')) { closeMenus(); return; }
 
   const actionEl = e.target.closest('[data-action]');
   if (!actionEl) {

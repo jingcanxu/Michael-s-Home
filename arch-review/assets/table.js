@@ -224,11 +224,20 @@ function renderCell(col, node, depth) {
 
 function linkCell(value) {
   if (!value) return '<span class="cell-empty">—</span>';
-  const url = /^https?:\/\//i.test(value);
-  if (url) {
-    return '<a href="' + esc(value) + '" target="_blank" rel="noopener" class="cell-clip" title="' + esc(value) + '">' + esc(value) + '</a>';
+  const v = String(value).trim();
+  if (/^https?:\/\//i.test(v)) {
+    // direct URL
+    return '<a href="' + esc(v) + '" target="_blank" rel="noopener" class="link-out cell-clip" title="' + esc(v) + '">' + esc(v) + '</a>';
   }
-  return '<span class="cell-clip" title="' + esc(value) + '">' + esc(value) + '</span>';
+  // text that hints at Confluence / XPaas — build a KM search URL
+  if (/confluence|xpaas|km\.|xpaas\.lenovo/i.test(v)) {
+    const title = v.replace(/\s*[-–—]\s*(XPaas\s+Confluence|.*Confluence.*)$/i, '').trim();
+    const q = encodeURIComponent(title || v);
+    const href = 'https://km.xpaas.lenovo.com/dosearchsite.action?queryString=' + q;
+    return '<a href="' + esc(href) + '" target="_blank" rel="noopener" class="link-out cell-clip" title="Search Confluence for: ' + esc(title || v) + '">' + esc(v) + '</a>';
+  }
+  // plain text — copy to clipboard on click
+  return '<a href="javascript:void(0)" class="link-copy cell-clip" data-copy="' + esc(v) + '" title="Click to copy: ' + esc(v) + '">' + esc(v) + '</a>';
 }
 
 function updateResultCount() {
