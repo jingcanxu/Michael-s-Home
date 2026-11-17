@@ -995,6 +995,28 @@ button.meeting-node:hover { border-color: #b9c4d4; background: var(--bg-soft); }
   .meeting-time small { margin-left: auto; margin-top: 0; }
 }
 
+/* ---------------- Master list group tabs ---------------- */
+.master-tabs-bar {
+  display: flex; align-items: center; justify-content: flex-end;
+  margin-bottom: 12px; gap: 10px;
+}
+.master-tabs.segmented { padding: 4px; }
+.master-tabs.segmented button {
+  height: 30px; padding: 0 13px; font-size: 12px; gap: 7px;
+  display: inline-flex; align-items: center; min-width: fit-content;
+}
+.master-tabs.segmented button.active {
+  background: var(--navy); color: #fff;
+}
+.tab-count {
+  display: inline-block; min-width: 20px; height: 18px; line-height: 18px;
+  padding: 0 5px; border-radius: 9px; font-size: 10px; font-weight: 600;
+  background: rgba(0, 0, 0, .08); color: var(--muted);
+}
+.master-tabs.segmented button.active .tab-count {
+  background: rgba(255, 255, 255, .25); color: #fff;
+}
+
 /* ---------------- Responsive ---------------- */
 @media (max-width: 1180px) {
   .dashboard-grid { grid-template-columns: 1fr; }

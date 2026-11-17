@@ -23,6 +23,8 @@ const MEETING = {
   filter: ['upcoming', 'past', 'all']
 };
 
+const GROUPS = ['PCG', 'ISG', 'MBG', 'NEC'];
+
 const GROUP_META = {
   identification: 'IDENTIFICATION',
   governance: 'GOVERNANCE',
@@ -70,7 +72,7 @@ const DEFAULT_COLUMNS = [
 ];
 
 const EXPORT_HEADERS = [
-  'RankID', 'Node ID', 'Level', 'L1 Application', 'L2 Application',
+  'RankID', 'Node ID', 'Group', 'Level', 'L1 Application', 'L2 Application',
   'L3 Feature/module', 'L4 Function Name', 'Description', 'CFC Related',
   'Owner Biz Team', 'DT Owner', 'Shadow Owner', 'Experience Level', 'Tech Stack',
   'PRD Link (L3)', 'PRD Version (Active)', 'Change Project', 'IT Owner', 'FS Link(L4)', 'Status', 'Change Type', 'Priority',
@@ -92,7 +94,8 @@ const ui = {
   queueLevel: 'all',
   advanced: false,
   focus: null,
-  meetingFilter: 'upcoming'
+  meetingFilter: 'upcoming',
+  masterTab: 'all'
 };
 
 let state = null;
@@ -145,6 +148,10 @@ function normalizeNode(raw) {
     'techStack', 'prdLink', 'prdVersion', 'changeProject', 'itOwner', 'fsLink', 'status', 'changeType', 'priority',
     'sharedAcross', 'lockStatus', 'created', 'lastModified', 'reviewDate', 'notes',
     'reviewer', 'source'].forEach(k => { n[k] = n[k] == null ? '' : String(n[k]); });
+  if (!n.group || !GROUPS.includes(n.group)) {
+    const prefix = String(n.nodeId || '').split('-')[0].toUpperCase();
+    n.group = GROUPS.includes(prefix) ? prefix : (n.group || '');
+  }
   if (!n.status) n.status = 'Active';
   if (!n.changeType) n.changeType = '—';
   if (!n.priority) n.priority = '—';
@@ -503,7 +510,9 @@ function setView(view) {
 
 /* ---------------- Filtering ---------------- */
 function hasActiveFilters() {
-  return Object.keys(ui.filters).some(k => ui.filters[k]) || !!ui.search.trim();
+  return Object.keys(ui.filters).some(k => ui.filters[k]) ||
+    !!ui.search.trim() ||
+    (ui.masterTab && ui.masterTab !== 'all');
 }
 
 function searchText(n) {
@@ -516,6 +525,7 @@ function searchText(n) {
 
 function matchesFilters(n) {
   const f = ui.filters;
+  if (ui.masterTab && ui.masterTab !== 'all' && n.group !== ui.masterTab) return false;
   if (f.level && n.level !== f.level) return false;
   if (f.status && n.status !== f.status) return false;
   if (f.evaluation && reviewStatus(n) !== f.evaluation) return false;
@@ -566,11 +576,9 @@ function compareNodes(a, b) {
 
 function displayRows() {
   const matches = filteredNodes();
+  const matchIds = new Set(matches.map(n => n.id));
   if (ui.sort.key) {
     return matches.sort(compareNodes).map(n => ({ node: n, depth: 0 }));
-  }
-  if (hasActiveFilters()) {
-    return matches.sort(sortByRank).map(n => ({ node: n, depth: 0 }));
   }
   const collapsed = new Set(state.settings.collapsed);
   const out = [];
@@ -578,11 +586,15 @@ function displayRows() {
   const walk = (n, depth) => {
     if (seen.has(n.id)) return;
     seen.add(n.id);
-    out.push({ node: n, depth: depth });
+    if (matchIds.has(n.id)) out.push({ node: n, depth: depth });
     if (!collapsed.has(n.id)) childrenOf(n.id).forEach(c => walk(c, depth + 1));
   };
-  state.nodes.filter(n => !n.parentId).sort(sortByRank).forEach(n => walk(n, 0));
-  state.nodes.filter(n => !seen.has(n.id)).sort(sortByRank).forEach(n => walk(n, 0));
+  const rootPool = matchIds.size ? matches : state.nodes;
+  const roots = rootPool
+    .filter(n => !n.parentId || !matchIds.has(n.parentId))
+    .sort(sortByRank);
+  roots.forEach(n => walk(n, 0));
+  if (!matchIds.size) state.nodes.filter(n => !seen.has(n.id)).sort(sortByRank).forEach(n => walk(n, 0));
   return out;
 }
 

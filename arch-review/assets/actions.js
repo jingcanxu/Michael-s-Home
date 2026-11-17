@@ -233,6 +233,12 @@ function handleClick(e) {
     case 'meeting-open-node':
       openDrawer(actionEl.dataset.id);
       break;
+    case 'master-tab': {
+      const key = actionEl.dataset.tab || 'all';
+      ui.masterTab = (key === 'all' || GROUPS.includes(key)) ? key : 'all';
+      render();
+      break;
+    }
     default:
       break;
   }

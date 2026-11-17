@@ -1,8 +1,34 @@
 /* Architecture Review Console — master table, drawer, modal */
 
 /* ---------------- Master list ---------------- */
+function groupCounts() {
+  const counts = { all: state.nodes.length };
+  GROUPS.forEach(g => { counts[g] = state.nodes.filter(n => n.group === g).length; });
+  return counts;
+}
+
+function masterTabsHTML() {
+  const counts = groupCounts();
+  const current = ui.masterTab || 'all';
+  const tabs = [
+    { key: 'all', label: 'All groups' }
+  ].concat(GROUPS.map(g => ({ key: g, label: g })));
+  return '<div class="master-tabs segmented" role="tablist" aria-label="Master list by org group">' +
+    tabs.map(t => {
+      const count = counts[t.key] || 0;
+      const active = current === t.key;
+      return '<button role="tab" data-action="master-tab" data-tab="' + t.key + '"' +
+        (active ? ' class="active" aria-selected="true"' : ' aria-selected="false"') + '>' +
+        esc(t.label) + '<span class="tab-count">' + count + '</span></button>';
+    }).join('') +
+  '</div>';
+}
+
 function renderMaster() {
   return '<div class="page">' +
+    '<div class="master-tabs-bar">' +
+      masterTabsHTML() +
+    '</div>' +
     '<div class="toolbar-card panel">' +
       toolbarHTML() +
       '<div class="advanced-filters' + (ui.advanced ? '' : ' hidden') + '" id="advanced-filters">' +
@@ -208,8 +234,10 @@ function updateResultCount() {
   const el = document.getElementById('result-count');
   if (!el) return;
   const shown = displayRows().length;
+  const total = filteredNodes().length;
   const stats = reviewStats();
-  el.innerHTML = 'Showing <strong>' + shown + '</strong> of ' + state.nodes.length + ' nodes' +
+  el.innerHTML = 'Showing <strong>' + shown + '</strong> of ' + total + ' nodes' +
+    (total !== state.nodes.length ? ' <span class="muted">(filtered from ' + state.nodes.length + ')</span>' : '') +
     ' · <strong>' + stats.reviewed + '</strong> reviewed · <strong>' + stats.coverage + '%</strong> coverage';
 }
 

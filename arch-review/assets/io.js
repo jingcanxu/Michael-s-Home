@@ -15,6 +15,7 @@ function exportRow(node) {
   return {
     'RankID': node.rankId == null ? '' : node.rankId,
     'Node ID': node.nodeId,
+    'Group': node.group || '',
     'Level': node.level,
     'L1 Application': nameAtLevel(node, 'L1'),
     'L2 Application': nameAtLevel(node, 'L2'),
