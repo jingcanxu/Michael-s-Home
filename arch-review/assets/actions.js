@@ -15,6 +15,7 @@ function init() {
 
   render();
   bindEvents();
+  if (typeof bridgeProbe === 'function') bridgeProbe();
 }
 
 function bindEvents() {
@@ -111,6 +112,7 @@ function handleClick(e) {
     }
     case 'export-xlsx': exportXlsx(); break;
     case 'export-summary': exportSummary(); break;
+    case 'bridge-connect': bridgeConnect(); break;
     case 'export-csv': exportCsv(); break;
     case 'export-json': exportJson(); break;
     case 'add-node':

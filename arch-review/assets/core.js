@@ -372,6 +372,7 @@ function saveState() {
   } catch (err) {
     setSaveState('Storage unavailable', true);
   }
+  if (typeof bridgeScheduleSync === 'function') bridgeScheduleSync();
 }
 
 function reindex() {

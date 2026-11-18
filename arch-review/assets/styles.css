@@ -1080,3 +1080,15 @@ button.meeting-node:hover { border-color: #b9c4d4; background: var(--bg-soft); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
 }
+
+/* ---------------- local Excel bridge ---------------- */
+.bridge-btn { gap: 8px; }
+.bridge-btn .bridge-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--muted-2, #98a2b3);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--muted-2, #98a2b3) 18%, transparent);
+  transition: background .15s ease, box-shadow .15s ease;
+}
+.bridge-btn.is-ready .bridge-dot { background: #12b76a; box-shadow: 0 0 0 3px rgba(18, 183, 106, .16); }
+.bridge-btn.is-on { border-color: rgba(18, 183, 106, .45); color: #05603a; }
+.bridge-btn.is-on .bridge-dot { background: #12b76a; box-shadow: 0 0 0 3px rgba(18, 183, 106, .22); }

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Architecture Review Console · L3/L4</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b2545'/%3E%3Cpath d='M18 44 32 18l14 26h-8l-6-12-6 12z' fill='%23fff'/%3E%3C/svg%3E"/>
-<link rel="stylesheet" href="assets/styles.css?v=20261117i"/>
+<link rel="stylesheet" href="assets/styles.css?v=20261118a"/>
 </head>
 <body>
 
@@ -124,6 +124,10 @@
           <input id="global-search" type="search" placeholder="Search nodes, owners, IDs…" autocomplete="off" spellcheck="false"/>
           <kbd>/</kbd>
         </label>
+        <button class="btn ghost bridge-btn" data-action="bridge-connect" id="bridge-btn">
+          <span class="bridge-dot"></span>
+          <span class="btn-label" id="bridge-label">Excel offline</span>
+        </button>
         <button class="btn ghost" data-action="import">
           <svg class="icon"><use href="#i-upload"></use></svg>
           <span class="btn-label">Import</span>
@@ -170,13 +174,14 @@
 <input type="file" id="file-input" accept=".xlsx,.xls,.csv,.json" hidden/>
 
 <script src="vendor/xlsx.full.min.js"></script>
-<script src="assets/seed-data.js?v=20261117i"></script>
-<script src="assets/prd-review-data.js?v=20261117i"></script>
-<script src="assets/core.js?v=20261117i"></script>
-<script src="assets/views.js?v=20261117i"></script>
-<script src="assets/table.js?v=20261117i"></script>
-<script src="assets/meetings.js?v=20261117i"></script>
-<script src="assets/io.js?v=20261117i"></script>
-<script src="assets/actions.js?v=20261117i"></script>
+<script src="assets/seed-data.js?v=20261118a"></script>
+<script src="assets/prd-review-data.js?v=20261118a"></script>
+<script src="assets/core.js?v=20261118a"></script>
+<script src="assets/views.js?v=20261118a"></script>
+<script src="assets/table.js?v=20261118a"></script>
+<script src="assets/meetings.js?v=20261118a"></script>
+<script src="assets/io.js?v=20261118a"></script>
+<script src="assets/bridge.js?v=20261118a"></script>
+<script src="assets/actions.js?v=20261118a"></script>
 </body>
 </html>
